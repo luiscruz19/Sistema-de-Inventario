@@ -37,7 +37,9 @@ logs:
 ## migrate: corre las migraciones dentro del contenedor de productos
 ##          (shared/db se monta como db/ en cada microservicio)
 migrate:
-	docker compose -f $(MICROS) exec inventario_ms_productos node db/migrations/runner.js
+	@echo "Esperando a que MySQL este listo..."
+	@until [ "$$(docker inspect -f '{{.State.Health.Status}}' inventario_mysql 2>/dev/null)" = "healthy" ]; do sleep 2; done
+	docker compose -f $(MICROS) exec -T inventario_ms_productos node db/migrations/runner.js
 
 ## seed: crea el admin de auth y carga datos demo de negocio
 ##       (shared/db se monta como db/ en cada microservicio)
