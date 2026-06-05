@@ -112,7 +112,7 @@ export async function create(req, res) {
     try {
         const {
             branch_id, customer_id, items, payments,
-            payment_method, discount_percentage = 0, notes,
+            payment_method, discount_percentage, discount_amount, notes,
         } = req.body;
 
         if (!items || items.length === 0) {
@@ -120,10 +120,15 @@ export async function create(req, res) {
             return res.status(400).json(errorMessage({ message: messages.entities.sale.errors.emptyItems }));
         }
 
-        // Generar número de venta
-        const config = await BusinessConfig.findOne();
+        // Generar número de venta de forma atómica para evitar duplicados con POS concurrentes
+        const config = await BusinessConfig.findOne({ transaction: t });
         const prefix = config?.receipt_prefix || 'T';
-        const nextNum = config?.receipt_next_number || 1;
+        let nextNum = 1;
+        if (config) {
+            await config.increment('receipt_next_number', { transaction: t });
+            await config.reload({ transaction: t });
+            nextNum = config.receipt_next_number - 1;
+        }
         const saleNumber = `${prefix}-${String(nextNum).padStart(8, '0')}`;
 
         let subtotal = 0;
@@ -168,6 +173,17 @@ export async function create(req, res) {
                 });
 
                 const prevQty = Number(stockRecord.quantity);
+
+                // Validar stock suficiente dentro de la transacción (salvo override por configuración)
+                const allowOversell = config?.allow_oversell === true;
+                if (!allowOversell && prevQty < qty) {
+                    await t.rollback();
+                    const productName = variant?.name ? `${product.name} (${variant.name})` : product.name;
+                    return res.status(400).json(errorMessage({
+                        message: `Stock insuficiente para ${productName}. Disponible: ${prevQty}`
+                    }));
+                }
+
                 const newQty = prevQty - qty;
                 await stockRecord.update({ quantity: newQty }, { transaction: t });
 
@@ -186,7 +202,18 @@ export async function create(req, res) {
             }
         }
 
-        const discountAmount = subtotal * Number(discount_percentage) / 100;
+        // Descuento: una sola fuente de verdad. Si viene discount_percentage se calcula a
+        // partir del porcentaje; si no, se usa discount_amount fijo. Nunca se aplican ambos.
+        const discountPct = Number(discount_percentage) || 0;
+        let discountAmount;
+        let discountPercentage;
+        if (discountPct > 0) {
+            discountAmount = subtotal * discountPct / 100;
+            discountPercentage = discountPct;
+        } else {
+            discountAmount = Math.min(Number(discount_amount) || 0, subtotal);
+            discountPercentage = 0;
+        }
         const total = Number((subtotal - discountAmount + taxAmount).toFixed(2));
 
         // Calcular pagos
@@ -207,7 +234,7 @@ export async function create(req, res) {
             status: 'completed',
             subtotal: Number(subtotal.toFixed(2)),
             discount_amount: Number(discountAmount.toFixed(2)),
-            discount_percentage: Number(discount_percentage),
+            discount_percentage: Number(discountPercentage),
             tax_amount: Number(taxAmount.toFixed(2)),
             total,
             paid_amount: Number(paidAmount.toFixed(2)),
@@ -246,11 +273,7 @@ export async function create(req, res) {
             }, { transaction: t });
         }
 
-        // Incrementar número de comprobante
-        if (config) {
-            await config.update({ receipt_next_number: nextNum + 1 }, { transaction: t });
-        }
-
+        // El número de comprobante ya fue incrementado de forma atómica al inicio
         await t.commit();
 
         return res.status(201).json(successMessage({

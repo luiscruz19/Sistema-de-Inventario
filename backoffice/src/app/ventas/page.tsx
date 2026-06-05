@@ -152,8 +152,10 @@ export default function PuntoDeVentaPage() {
             branch_id: Number(selectedBranch),
             customer_id: selectedCustomer ? Number(selectedCustomer) : null,
             payment_method: paymentMethod === 'mixed' ? 'mixed' : paymentMethod,
-            discount_amount: discountAmount,
+            // El backend calcula el descuento desde una sola fuente: si es porcentual
+            // envía discount_percentage; si es fijo envía discount_amount. Nunca ambos.
             discount_percentage: discountType === 'percentage' ? discountValue : 0,
+            discount_amount: discountType === 'fixed' ? discountValue : 0,
             items: cart.map(item => ({
                 product_id: item.product.id,
                 variant_id: item.variantId,
@@ -242,11 +244,17 @@ export default function PuntoDeVentaPage() {
                                                     </div>
                                                     <div className="text-right shrink-0">
                                                         <p className="font-semibold text-primary-600">{formatCurrency(product.sale_price)}</p>
-                                                        {product.track_stock && (
-                                                            <p className="text-xs text-gray-400">
-                                                                Stock: {product.stockEntries?.reduce((s, e) => s + e.quantity - e.reserved_quantity, 0) ?? '?'}
-                                                            </p>
-                                                        )}
+                                                        {product.track_stock && (() => {
+                                                            const stock = product.stockEntries?.reduce((s, e) => s + e.quantity - e.reserved_quantity, 0)
+                                                            if (stock === undefined || stock === null) {
+                                                                return <p className="text-xs text-gray-400 mt-0.5">Stock: ?</p>
+                                                            }
+                                                            const alert = product.min_stock_alert ?? 0
+                                                            const variant = stock <= 0 ? 'destructive' : stock <= alert ? 'warning' : 'success'
+                                                            return (
+                                                                <Badge variant={variant} className="mt-0.5 text-xs">Stock: {stock}</Badge>
+                                                            )
+                                                        })()}
                                                     </div>
                                                     <Plus className="h-5 w-5 text-gray-400 shrink-0" />
                                                 </button>

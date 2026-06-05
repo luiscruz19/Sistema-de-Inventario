@@ -43,6 +43,11 @@ const BusinessConfig = sequelize.define('business_configs', {
         allowNull: false,
         defaultValue: 1,
     },
+    allow_oversell: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
 }, {
     tableName: 'business_configs',
     timestamps: true,
