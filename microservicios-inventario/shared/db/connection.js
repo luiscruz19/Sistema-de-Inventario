@@ -83,9 +83,9 @@ async function loadModels() {
         const isProduction = process.env.NODE_ENV === 'production';
         const serviceName = process.env.SERVICE_NAME || '';
         const runtimeSyncEnv = process.env.DB_RUNTIME_SYNC;
-        const enableRuntimeSync = runtimeSyncEnv !== undefined
-            ? String(runtimeSyncEnv).toLowerCase() === 'true'
-            : !isProduction;
+        // El sync de modelos es opt-in: las migraciones son la fuente de verdad del esquema.
+        // Solo se sincroniza si DB_RUNTIME_SYNC=true (evita chocar con las migraciones).
+        const enableRuntimeSync = String(runtimeSyncEnv).toLowerCase() === 'true';
         console.info(`Microservicio: ${serviceName || 'NO DEFINIDO'}`);
         console.info(`DB runtime sync: ${enableRuntimeSync ? 'ACTIVADO' : 'DESACTIVADO'}`);
 
