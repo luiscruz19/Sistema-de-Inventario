@@ -8,7 +8,7 @@
  */
 
 export async function up(queryInterface, Sequelize) {
-    // ── fiscal_configs ─────────────────────────────────────────────────
+    // fiscal_configs
     await queryInterface.createTable('fiscal_configs', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         cuit: { type: Sequelize.STRING(20), allowNull: true },
@@ -33,7 +33,7 @@ export async function up(queryInterface, Sequelize) {
         updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
     });
 
-    // ── fiscal_sequences ───────────────────────────────────────────────
+    // fiscal_sequences
     await queryInterface.createTable('fiscal_sequences', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         pto_vta: { type: Sequelize.INTEGER, allowNull: false },
@@ -45,7 +45,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('fiscal_sequences', ['pto_vta', 'doc_type'], { unique: true, name: 'uq_fiscal_sequence' });
 
-    // ── invoices ───────────────────────────────────────────────────────
+    // invoices
     await queryInterface.createTable('invoices', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         sale_id: { type: Sequelize.INTEGER, allowNull: true },
@@ -118,7 +118,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('invoices', ['status']);
     await queryInterface.addIndex('invoices', ['cae']);
 
-    // ── invoice_items ──────────────────────────────────────────────────
+    // invoice_items
     await queryInterface.createTable('invoice_items', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         invoice_id: { type: Sequelize.INTEGER, allowNull: false },
@@ -139,7 +139,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('invoice_items', ['invoice_id']);
 
-    // ── invoice_taxes ──────────────────────────────────────────────────
+    // invoice_taxes
     await queryInterface.createTable('invoice_taxes', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         invoice_id: { type: Sequelize.INTEGER, allowNull: false },

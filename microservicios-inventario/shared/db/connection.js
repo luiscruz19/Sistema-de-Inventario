@@ -32,12 +32,12 @@ async function loadModels() {
 
                 if (modelModule.default) {
                     models[modelName] = modelModule.default;
-                    console.info(`✅ ${modelName}`);
+                    console.info(`${modelName}`);
                 } else {
-                    console.warn(`⚠ Modelo ${modelName} no tiene export default`);
+                    console.warn(`Modelo ${modelName} no tiene export default`);
                 }
             } catch (error) {
-                console.error(`❌ Error cargando ${file}:`, error.message);
+                console.error(`Error cargando ${file}:`, error.message);
             }
         }
 
@@ -51,25 +51,23 @@ async function loadModels() {
 (async () => {
     try {
         console.info('Sincronizando tablas con modelos...');
-        console.info('-'.repeat(100));
 
         // Cargar todos los modelos dinámicamente
         const models = await loadModels();
 
         // Mostrar los modelos cargados
-        console.info(`📋 Modelos cargados: ${Object.keys(models).join(', ')}`);
-        console.info(`📊 Total de modelos: ${Object.keys(models).length}`);
-        console.info('-'.repeat(100));
+        console.info(`Modelos cargados: ${Object.keys(models).join(', ')}`);
+        console.info(`Total de modelos: ${Object.keys(models).length}`);
 
         // Configurar las relaciones si el archivo index.js existe
         try {
             const relationModule = await import('../models/index.js');
             if (relationModule.setupAssociations) {
                 relationModule.setupAssociations();
-                console.info('✅ Relaciones configuradas correctamente');
+                console.info('Relaciones configuradas correctamente');
             }
         } catch (relationError) {
-            console.warn('⚠ No se pudieron configurar las relaciones:', relationError.message);
+            console.warn('No se pudieron configurar las relaciones:', relationError.message);
         }
 
         // Verificar conexión a la base de datos
@@ -88,14 +86,14 @@ async function loadModels() {
         const enableRuntimeSync = runtimeSyncEnv !== undefined
             ? String(runtimeSyncEnv).toLowerCase() === 'true'
             : !isProduction;
-        console.info(`🏷️  Microservicio: ${serviceName || 'NO DEFINIDO'}`);
-        console.info(`🧭 DB runtime sync: ${enableRuntimeSync ? 'ACTIVADO' : 'DESACTIVADO'}`);
+        console.info(`Microservicio: ${serviceName || 'NO DEFINIDO'}`);
+        console.info(`DB runtime sync: ${enableRuntimeSync ? 'ACTIVADO' : 'DESACTIVADO'}`);
 
         // Espera inicial aleatoria para evitar que todos los servicios sincronicen al mismo tiempo
         const maxDelay = isProduction ? 1000 : 3000;
         const initialDelay = Math.floor(Math.random() * maxDelay);
         if (initialDelay > 0) {
-            console.info(`⏱️  Esperando ${initialDelay}ms para evitar conflictos de inicio simultáneo...`);
+            console.info(`Esperando ${initialDelay}ms para evitar conflictos de inicio simultáneo...`);
             await new Promise(resolve => setTimeout(resolve, initialDelay));
         }
 
@@ -103,7 +101,7 @@ async function loadModels() {
 
             // Si no hay nombre de servicio, sincronizar todos los modelos
             if (!serviceName) {
-                console.warn('⚠️  SERVICE_NAME no definido, sincronizando todos los modelos');
+                console.warn('SERVICE_NAME no definido, sincronizando todos los modelos');
                 return true;
             }
 
@@ -117,10 +115,10 @@ async function loadModels() {
             shouldSyncModel(modelName)
         );
 
-        console.info(`📌 Modelos a sincronizar (${modelsToSync.length}): ${modelsToSync.map(([name]) => name).join(', ')}`);
+        console.info(`Modelos a sincronizar (${modelsToSync.length}): ${modelsToSync.map(([name]) => name).join(', ')}`);
 
         if (!enableRuntimeSync) {
-            console.info('⏭️  Se omite sincronización de modelos en runtime (usar migraciones).');
+            console.info('Se omite sincronización de modelos en runtime (usar migraciones).');
             return;
         }
 
@@ -128,9 +126,9 @@ async function loadModels() {
         const allowAlter = !isProduction;
 
         if (isProduction) {
-            console.info('🔒 Modo PRODUCCIÓN: alter desactivado (solo crear tablas nuevas)');
+            console.info('Modo PRODUCCIÓN: alter desactivado (solo crear tablas nuevas)');
         } else {
-            console.info('🔧 Modo DESARROLLO: alter activado (puede modificar tablas existentes)');
+            console.info('Modo DESARROLLO: alter activado (puede modificar tablas existentes)');
         }
 
         // Sincronizar con la base de datos de forma segura
@@ -156,12 +154,12 @@ async function loadModels() {
                             alter: allowAlter,
                             logging: false
                         });
-                        console.info(`✓ Modelo ${modelName} verificado/creado`);
+                        console.info(`Modelo ${modelName} verificado/creado`);
                         results.push({ success: true, modelName });
                     } catch (modelError) {
                         if (modelError.name === 'SequelizeDatabaseError' &&
                             modelError.parent?.code === 'ER_TABLE_EXISTS_ERROR') {
-                            console.info(`✓ Modelo ${modelName} ya existe`);
+                            console.info(`Modelo ${modelName} ya existe`);
                             results.push({ success: true, modelName });
                             continue;
                         }
@@ -169,18 +167,18 @@ async function loadModels() {
                         if (modelError.name === 'SequelizeDatabaseError' &&
                             (modelError.parent?.code === 'ER_CANT_DROP_FIELD_OR_KEY' ||
                              modelError.parent?.code === 'ER_DROP_INDEX_FK')) {
-                            console.warn(`⚠ ${modelName}: constraint no encontrada (ignorado)`);
+                            console.warn(`${modelName}: constraint no encontrada (ignorado)`);
                             results.push({ success: true, modelName });
                             continue;
                         }
 
                         if (modelError.parent?.code === 'ER_LOCK_DEADLOCK') {
-                            console.warn(`⚠ ${modelName}: deadlock detectado`);
+                            console.warn(`${modelName}: deadlock detectado`);
                             results.push({ success: false, modelName, error: modelError });
                             continue;
                         }
 
-                        console.error(`✗ Error en modelo ${modelName}:`, modelError.message);
+                        console.error(`Error en modelo ${modelName}:`, modelError.message);
                         results.push({ success: false, modelName, error: modelError });
                     }
 
@@ -191,14 +189,14 @@ async function loadModels() {
                 const hasErrors = results.some(r => !r.success);
 
                 if (hasDeadlocks && retry < maxRetries - 1) {
-                    console.warn(`⚠ Deadlocks detectados, reintentando...`);
+                    console.warn(`Deadlocks detectados, reintentando...`);
                     continue;
                 }
 
                 if (!hasErrors || retry === maxRetries - 1) {
                     syncSuccessful = true;
                     const successCount = results.filter(r => r.success).length;
-                    console.info(`✅ Sincronización completada: ${successCount}/${results.length} modelos verificados`);
+                    console.info(`Sincronización completada: ${successCount}/${results.length} modelos verificados`);
                 }
 
             } catch (syncError) {
@@ -210,14 +208,14 @@ async function loadModels() {
 
                 if (retry === maxRetries - 1) {
                     syncSuccessful = true;
-                    console.warn('⚠ Usando tablas existentes sin modificaciones');
+                    console.warn('Usando tablas existentes sin modificaciones');
                 }
             }
         }
 
         if (!syncSuccessful) {
-            console.error('❌ No se pudo completar la sincronización después de todos los intentos');
-            console.info('💡 Las tablas existentes se usarán sin cambios');
+            console.error('No se pudo completar la sincronización después de todos los intentos');
+            console.info('Las tablas existentes se usarán sin cambios');
         }
 
     } catch (error) {

@@ -123,7 +123,7 @@ export async function requestCae(payload) {
 
     const ctx = await resolveArcaContext();
 
-    // ── MODO STUB ─────────────────────────────────────────────────────
+    // MODO STUB
     if (ctx.mode === 'simulated') {
         const cae = randomDigits(14);
         const expiration = new Date();
@@ -150,7 +150,7 @@ export async function requestCae(payload) {
         };
     }
 
-    // ── MODO REAL ────────────────────────────────────────────────────
+    // MODO REAL
     const soap = await tryLoadSoap();
     if (!soap) {
         console.warn('[arca] Librería "soap" no instalada. Caída a modo simulado pese a tener credenciales.');
@@ -162,7 +162,7 @@ export async function requestCae(payload) {
         // El flujo real es:
         //   1. Generar TRA (XML con UniqueId/GenerationTime/ExpirationTime/Service=wsfe)
         //   2. Firmar el TRA con cert_pem + key_pem (CMS/SignedData) usando openssl o node-forge
-        //   3. POST a WSAA (https://wsaahomo.afip.gov.ar/ws/services/LoginCms) → obtener Token y Sign (TA)
+        // 3. POST a WSAA (https://wsaahomo.afip.gov.ar/ws/services/LoginCms)  obtener Token y Sign (TA)
         //   4. Llamar a wsfev1 FECAESolicitar con el TA + datos del comprobante
         //   5. Parsear la respuesta: CAE, CAEFchVto, Resultado (A=aprobado, R=rechazado) y Observaciones
         //

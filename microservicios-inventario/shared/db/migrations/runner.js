@@ -31,7 +31,7 @@ async function run() {
 
     try {
         await sequelize.authenticate();
-        console.info('✅ Conexión a DB establecida');
+        console.info('Conexión a DB establecida');
 
         await ensureMigrationsTable();
 
@@ -43,9 +43,9 @@ async function run() {
             .sort();
 
         if (statusOnly) {
-            console.info('\n📋 Estado de migraciones:\n');
+            console.info('\n Estado de migraciones:\n');
             for (const file of files) {
-                const status = executed.has(file) ? '✅ ejecutada' : '⏳ pendiente';
+                const status = executed.has(file) ? ' ejecutada' : ' pendiente';
                 console.info(`  ${status}  ${file}`);
             }
             const pending = files.filter(f => !executed.has(f));
@@ -56,30 +56,30 @@ async function run() {
         const pending = files.filter(f => !executed.has(f));
 
         if (pending.length === 0) {
-            console.info('✅ No hay migraciones pendientes');
+            console.info('No hay migraciones pendientes');
             process.exit(0);
         }
 
-        console.info(`\n📦 ${pending.length} migración(es) pendiente(s):\n`);
+        console.info(`\n ${pending.length} migración(es) pendiente(s):\n`);
 
         for (const file of pending) {
-            console.info(`▶ Ejecutando: ${file}`);
+            console.info(`Ejecutando: ${file}`);
             try {
                 const migration = await import(`./${file}`);
                 await migration.up(sequelize.getQueryInterface(), Sequelize, sequelize);
                 await sequelize.query('INSERT INTO _migrations (name) VALUES (?)', { replacements: [file] });
-                console.info(`  ✅ Completada: ${file}`);
+                console.info(`Completada: ${file}`);
             } catch (err) {
-                console.error(`  ❌ Error en ${file}:`, err.message);
+                console.error(`Error en ${file}:`, err.message);
                 console.error('  Abortando migraciones restantes.');
                 process.exit(1);
             }
         }
 
-        console.info('\n✅ Migraciones finalizadas');
+        console.info('\n Migraciones finalizadas');
         process.exit(0);
     } catch (err) {
-        console.error('❌ Error general:', err.message);
+        console.error('Error general:', err.message);
         process.exit(1);
     }
 }

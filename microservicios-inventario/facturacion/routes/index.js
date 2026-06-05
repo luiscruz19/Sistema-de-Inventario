@@ -6,18 +6,18 @@ import * as fiscalConfigCtrl from '../controllers/fiscal-config.controller.js';
 
 const api = Router();
 
-// ── Configuración fiscal ───────────────────────────────────────────────
+// Configuración fiscal
 api.get('/fiscal-config', validateToken, fiscalConfigCtrl.get);
 api.put('/fiscal-config', validateToken, fiscalConfigCtrl.upsert);
 api.put('/fiscal-config/arca', validateToken, fiscalConfigCtrl.upsertArcaCredentials);
 api.post('/fiscal-config/arca/test', validateToken, fiscalConfigCtrl.testArca);
 
-// ── Integraciones genéricas (credentials en variables de entorno) ──────
+// Integraciones genéricas (credentials en variables de entorno)
 api.get('/fiscal-config/integrations', validateToken, fiscalConfigCtrl.listAllIntegrations);
 api.put('/fiscal-config/integrations/:provider', validateToken, fiscalConfigCtrl.upsertIntegration);
 api.delete('/fiscal-config/integrations/:provider', validateToken, fiscalConfigCtrl.deleteIntegration);
 
-// ── Invoices ───────────────────────────────────────────────────────────
+// Invoices
 api.get('/invoices', validateToken, invoicesCtrl.list);
 api.get('/invoices/last-authorized', validateToken, invoicesCtrl.lastAuthorized);
 api.get('/invoices/:id', validateToken, invoicesCtrl.getById);

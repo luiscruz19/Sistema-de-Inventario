@@ -85,7 +85,7 @@ export async function streamInvoicePdf(res, invoice) {
     doc.fontSize(9);
 
     items.forEach((it) => {
-        const line = `${Number(it.quantity).toFixed(2)} x ${it.description}  @ ${formatCurrency(it.unit_price)}  →  ${formatCurrency(it.total)}`;
+        const line = `${Number(it.quantity).toFixed(2)} x ${it.description}  @ ${formatCurrency(it.unit_price)}    ${formatCurrency(it.total)}`;
         doc.text(line);
     });
 

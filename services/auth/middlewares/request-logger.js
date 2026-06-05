@@ -7,7 +7,7 @@ export default function requestLogger(req, res, next) {
         const ms = Date.now() - start;
         const status = res.statusCode;
         const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
-        logger[level](`${req.method} ${req.path} → ${status}`, {
+        logger[level](`${req.method} ${req.path}  ${status}`, {
             requestId: req.id,
             method: req.method,
             path: req.path,

@@ -361,7 +361,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('marketplace_orders', ['connection_id', 'marketplace_order_id'], { unique: true, name: 'uq_marketplace_order_connection_order' });
     console.info('    ~ Tabla marketplace_orders creada');
 
-    // ── Columnas adicionales en tablas existentes ────────────────────────────
+    // Columnas adicionales en tablas existentes
 
     // product_batch_id en stock_movements
     const [batchColResult] = await queryInterface.sequelize.query("SHOW COLUMNS FROM stock_movements LIKE 'product_batch_id'");
@@ -396,7 +396,7 @@ export async function up(queryInterface, Sequelize) {
         console.info('    ~ Columna rma_id agregada a credit_notes');
     }
 
-    console.info('  ✓ Migración 0009_new_features completada');
+    console.info('Migración 0009_new_features completada');
 }
 
 export async function down(queryInterface) {

@@ -6,17 +6,17 @@ import * as transfersCtrl from '../controllers/transfers.controller.js';
 
 const api = Router();
 
-// ── Stock ─────────────────────────────────────────────────────────────────
+// Stock
 api.get('/stock', validateToken, stockCtrl.list);
 api.post('/stock/adjust', validateToken, stockCtrl.adjust);
 
-// ── Movements ─────────────────────────────────────────────────────────────
+// Movements
 api.get('/movements', validateToken, stockCtrl.listMovements);
 
-// ── Alerts ────────────────────────────────────────────────────────────────
+// Alerts
 api.get('/alerts', validateToken, stockCtrl.lowStockAlerts);
 
-// ── Transfers ─────────────────────────────────────────────────────────────
+// Transfers
 api.get('/transfers', validateToken, transfersCtrl.list);
 api.get('/transfers/:id', validateToken, transfersCtrl.getById);
 api.post('/transfers', validateToken, transfersCtrl.create);

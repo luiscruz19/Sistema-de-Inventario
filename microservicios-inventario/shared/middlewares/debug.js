@@ -43,12 +43,8 @@ export default (req, res, next) => {
 
     const fullUrl = `${protocol}://${hostname}${originalUrl}`;
 
-    console.info('');
-    console.info('='.repeat(100));
     console.info('PETICION ENTRANTE - ' + horaFormateada);
-    console.info('='.repeat(100));
 
-    console.info('');
     console.info('INFORMACION GENERAL:');
     console.info('   Método HTTP:', method);
     console.info('   URL Completa:', fullUrl);
@@ -56,19 +52,16 @@ export default (req, res, next) => {
     console.info('   Base URL:', baseUrl || '/');
     console.info('   Original URL:', originalUrl);
 
-    console.info('');
     console.info('ORIGEN Y CLIENTE:');
     console.info('   Origen:', origen);
     console.info('   IP Cliente:', ip);
     console.info('   Host:', host);
     console.info('   User-Agent:', userAgent);
 
-    console.info('');
     console.info('AUTENTICACION Y SEGURIDAD:');
     console.info('   Authorization:', authorization);
     console.info('   Content-Type:', contentType);
 
-    console.info('');
     console.info('DATOS DE ENTRADA:');
 
     if (params && Object.keys(params).length > 0) {
@@ -100,8 +93,6 @@ export default (req, res, next) => {
         console.info('   Body: (vacío)');
     }
 
-    console.info('');
-    console.info('-'.repeat(100));
 
     const originalSend = res.send;
     const originalJson = res.json;
@@ -117,19 +108,12 @@ export default (req, res, next) => {
             hour12: false
         });
 
-        console.info('');
-        console.info('='.repeat(100));
         console.info('RESPUESTA ENVIADA - ' + horaRespuesta);
-        console.info('='.repeat(100));
 
-        console.info('');
         console.info('INFORMACION DE RESPUESTA:');
         console.info('   Status Code:', res.statusCode);
         console.info('   Duración:', duration + 'ms');
 
-        console.info('');
-        console.info('='.repeat(100));
-        console.info('');
 
         return data;
     };

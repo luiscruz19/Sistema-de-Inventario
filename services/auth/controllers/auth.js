@@ -285,7 +285,7 @@ export async function validateToken(req, res) {
         // Validar el token NO exige cuenta verificada: un token recién emitido en el
         // signup es válido aunque el usuario todavía no verificó su email (lo hace
         // después de pagar). El gate de "verified" está en el login (403) y en los
-        // guards de contenido premium, no acá. Exigirlo rompía el flujo signup→pago
+        // guards de contenido premium, no acá. Exigirlo rompía el flujo signuppago
         // (update-payment-status fallaba y la suscripción quedaba en pending).
         if (!user) {
             return res.status(400).json(errorMessage({ message: messages.generic.user_not_found }));

@@ -9,7 +9,7 @@ import * as returnsCtrl from '../controllers/returns.controller.js';
 
 const api = Router();
 
-// ── Sales (POS) ───────────────────────────────────────────────────────────
+// Sales (POS)
 api.get('/sales', validateToken, salesCtrl.list);
 api.get('/sales/:id', validateToken, salesCtrl.getById);
 api.post('/sales', validateToken, salesCtrl.create);
@@ -17,27 +17,27 @@ api.put('/sales/:id', validateToken, salesCtrl.updateStatus);
 api.patch('/sales/:id/cancel', validateToken, salesCtrl.cancel);
 api.patch('/sales/:id/refund', validateToken, salesCtrl.refund);
 
-// ── Reports ───────────────────────────────────────────────────────────────
+// Reports
 api.get('/reports/by-period', validateToken, reportsCtrl.byPeriod);
 api.get('/reports/by-product', validateToken, reportsCtrl.byProduct);
 api.get('/reports/by-branch', validateToken, reportsCtrl.byBranch);
 api.get('/reports/margins', validateToken, reportsCtrl.margins);
 
-// ── Cash Register ─────────────────────────────────────────────────────────
+// Cash Register
 api.get('/cash-register', validateToken, cashRegisterCtrl.list);
 api.get('/cash-register/current', validateToken, cashRegisterCtrl.getCurrent);
 api.post('/cash-register/open', validateToken, cashRegisterCtrl.open);
 api.post('/cash-register/close', validateToken, cashRegisterCtrl.closeByBranch);
 api.patch('/cash-register/:id/close', validateToken, cashRegisterCtrl.close);
 
-// ── Credit Notes (Notas de crédito/devoluciones) ─────────────────────────
+// Credit Notes (Notas de crédito/devoluciones)
 api.get('/credit-notes', validateToken, creditNotesCtrl.list);
 api.get('/credit-notes/:id', validateToken, creditNotesCtrl.getById);
 api.post('/credit-notes', validateToken, creditNotesCtrl.create);
 api.patch('/credit-notes/:id/apply', validateToken, creditNotesCtrl.apply);
 api.patch('/credit-notes/:id/cancel', validateToken, creditNotesCtrl.cancel);
 
-// ── Returns / RMA ─────────────────────────────────────────────────────────
+// Returns / RMA
 api.get('/returns', validateToken, returnsCtrl.list);
 api.get('/returns/:id', validateToken, returnsCtrl.getById);
 api.post('/returns', validateToken, returnsCtrl.create);

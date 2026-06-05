@@ -5,7 +5,7 @@
 
 export async function up(queryInterface, Sequelize) {
 
-    // ── credit_notes ──
+    // credit_notes
     await queryInterface.createTable('credit_notes', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         sale_id: { type: Sequelize.INTEGER, allowNull: true, comment: 'Venta original (nullable para ajustes manuales)' },
@@ -35,7 +35,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('credit_notes', ['status']);
     console.info('    ~ Tabla credit_notes creada');
 
-    // ── credit_note_items ──
+    // credit_note_items
     await queryInterface.createTable('credit_note_items', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         credit_note_id: { type: Sequelize.INTEGER, allowNull: false },

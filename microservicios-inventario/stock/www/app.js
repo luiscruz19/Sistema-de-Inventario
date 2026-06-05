@@ -24,8 +24,8 @@ app.use(Debug)
 
 // Database connection
 sequelize.authenticate()
-    .then(() => console.log('✅ Conexión a base de datos establecida (Inventario - Stock)'))
-    .catch(err => console.error('❌ Error conectando a la base de datos:', err));
+    .then(() => console.log('Conexión a base de datos establecida (Inventario - Stock)'))
+    .catch(err => console.error('Error conectando a la base de datos:', err));
 
 // Routes
 app.use('/', routes);

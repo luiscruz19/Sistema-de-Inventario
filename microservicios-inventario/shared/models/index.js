@@ -371,7 +371,7 @@ function setupAssociations() {
         as: 'customer'
     });
 
-    // ── Facturación ─────────────────────────────────────────────────────
+    // Facturación
     Sale.hasMany(Invoice, { foreignKey: 'sale_id', as: 'invoices' });
     Invoice.belongsTo(Sale, { foreignKey: 'sale_id', as: 'sale' });
 
@@ -384,7 +384,7 @@ function setupAssociations() {
     Invoice.hasMany(InvoiceTax, { foreignKey: 'invoice_id', as: 'taxes' });
     InvoiceTax.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
 
-    // NC/ND → factura original
+    // NC/ND  factura original
     Invoice.hasMany(Invoice, { foreignKey: 'parent_invoice_id', as: 'relatedInvoices' });
     Invoice.belongsTo(Invoice, { foreignKey: 'parent_invoice_id', as: 'parentInvoice' });
 
@@ -392,7 +392,7 @@ function setupAssociations() {
     InvoiceItem.belongsTo(ProductVariant, { foreignKey: 'variant_id', as: 'variant' });
     InvoiceItem.belongsTo(SaleItem, { foreignKey: 'sale_item_id', as: 'saleItem' });
 
-    // ── Trazabilidad: lotes y series ─────────────────────────────────────────
+    // Trazabilidad: lotes y series
 
     // Product -> ProductBatches
     Product.hasMany(ProductBatch, { foreignKey: 'product_id', as: 'batches' });
@@ -426,7 +426,7 @@ function setupAssociations() {
     Customer.hasMany(ProductSerial, { foreignKey: 'customer_id', as: 'serials' });
     ProductSerial.belongsTo(Customer, { foreignKey: 'customer_id', as: 'customer' });
 
-    // ── RMA: devoluciones ────────────────────────────────────────────────────
+    // RMA: devoluciones
 
     // Sale -> ReturnRequests
     Sale.hasMany(ReturnRequest, { foreignKey: 'sale_id', as: 'returnRequests' });
@@ -451,7 +451,7 @@ function setupAssociations() {
     ProductVariant.hasMany(ReturnRequestItem, { foreignKey: 'variant_id', as: 'returnItems' });
     ReturnRequestItem.belongsTo(ProductVariant, { foreignKey: 'variant_id', as: 'variant' });
 
-    // ── Tesorería ────────────────────────────────────────────────────────────
+    // Tesorería
 
     // BankAccount -> BankMovements
     BankAccount.hasMany(BankMovement, { foreignKey: 'bank_account_id', as: 'movements' });
@@ -477,7 +477,7 @@ function setupAssociations() {
     Supplier.hasMany(Cheque, { foreignKey: 'supplier_id', as: 'cheques' });
     Cheque.belongsTo(Supplier, { foreignKey: 'supplier_id', as: 'supplier' });
 
-    // ── Contabilidad ─────────────────────────────────────────────────────────
+    // Contabilidad
 
     // ChartOfAccount self-referencing (cuentas padre/hijo)
     ChartOfAccount.hasMany(ChartOfAccount, { foreignKey: 'parent_id', as: 'children' });
@@ -495,7 +495,7 @@ function setupAssociations() {
     Invoice.hasMany(VatBookEntry, { foreignKey: 'invoice_id', as: 'vatBookEntries' });
     VatBookEntry.belongsTo(Invoice, { foreignKey: 'invoice_id', as: 'invoice' });
 
-    // ── Impuestos ────────────────────────────────────────────────────────────
+    // Impuestos
 
     // TaxSetting -> TaxWithholdings
     TaxSetting.hasMany(TaxWithholding, { foreignKey: 'tax_setting_id', as: 'withholdings' });
@@ -509,7 +509,7 @@ function setupAssociations() {
     PurchaseOrder.hasMany(TaxWithholding, { foreignKey: 'purchase_order_id', as: 'withholdings' });
     TaxWithholding.belongsTo(PurchaseOrder, { foreignKey: 'purchase_order_id', as: 'purchaseOrder' });
 
-    // ── Marketplaces ─────────────────────────────────────────────────────────
+    // Marketplaces
 
     // MarketplaceConnection -> MarketplaceProducts
     MarketplaceConnection.hasMany(MarketplaceProduct, { foreignKey: 'connection_id', as: 'products' });

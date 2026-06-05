@@ -7,7 +7,7 @@ import * as chequesCtrl from '../controllers/cheques.controller.js';
 
 const api = Router();
 
-// ── Bank Accounts (cuentas bancarias) ────────────────────────────────────
+// Bank Accounts (cuentas bancarias)
 api.get('/bank-accounts', validateToken, bankAccountsCtrl.list);
 api.get('/bank-accounts/:id', validateToken, bankAccountsCtrl.getById);
 api.get('/bank-accounts/:id/movements', validateToken, bankAccountsCtrl.getMovements);
@@ -15,12 +15,12 @@ api.post('/bank-accounts', validateToken, bankAccountsCtrl.create);
 api.put('/bank-accounts/:id', validateToken, bankAccountsCtrl.update);
 api.delete('/bank-accounts/:id', validateToken, bankAccountsCtrl.remove);
 
-// ── Bank Movements (movimientos bancarios) ────────────────────────────────
+// Bank Movements (movimientos bancarios)
 api.get('/bank-movements', validateToken, bankMovementsCtrl.list);
 api.get('/bank-movements/:id', validateToken, bankMovementsCtrl.getById);
 api.post('/bank-movements', validateToken, bankMovementsCtrl.create);
 
-// ── Cheques ───────────────────────────────────────────────────────────────
+// Cheques
 api.get('/cheques', validateToken, chequesCtrl.list);
 api.get('/cheques/:id', validateToken, chequesCtrl.getById);
 api.post('/cheques', validateToken, chequesCtrl.create);

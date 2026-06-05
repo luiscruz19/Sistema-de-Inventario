@@ -6,12 +6,7 @@ import logger from './utils/logger.js';
 const PORT = CONFIG.PORT;
 
 const server = app.listen(PORT, () => {
-    logger.info('');
-    logger.info('-'.repeat(100));
     logger.info('Servidor MAILER corriendo en "http://localhost:' + PORT + '"');
-    logger.info('-'.repeat(100));
-    logger.info('Último cambio: ' + new Date().toString().slice(16, 25).trim() + 'hs');
-    logger.info('');
 });
 
 process.on('unhandledRejection', (reason, promise) => {

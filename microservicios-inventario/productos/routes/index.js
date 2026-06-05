@@ -11,11 +11,11 @@ import * as serialsCtrl from '../controllers/serials.controller.js';
 
 const api = Router();
 
-// ── Business Config ───────────────────────────────────────────────────────
+// Business Config
 api.get('/business-config', validateToken, businessConfigCtrl.get);
 api.put('/business-config', validateToken, businessConfigCtrl.update);
 
-// ── Branches ──────────────────────────────────────────────────────────────
+// Branches
 api.get('/branches', validateToken, branchesCtrl.list);
 api.get('/branches/:id', validateToken, branchesCtrl.getById);
 api.post('/branches', validateToken, branchesCtrl.create);
@@ -23,7 +23,7 @@ api.put('/branches/:id', validateToken, branchesCtrl.update);
 api.delete('/branches/:id', validateToken, branchesCtrl.remove);
 api.patch('/branches/:id/toggle', validateToken, branchesCtrl.toggle);
 
-// ── Products ──────────────────────────────────────────────────────────────
+// Products
 api.get('/products', validateToken, productsCtrl.list);
 api.get('/products/:id', validateToken, productsCtrl.getById);
 api.post('/products', validateToken, productsCtrl.create);
@@ -37,28 +37,28 @@ api.post('/products/:productId/variants', validateToken, productsCtrl.createVari
 api.put('/variants/:id', validateToken, productsCtrl.updateVariant);
 api.delete('/variants/:id', validateToken, productsCtrl.removeVariant);
 
-// ── Categories ────────────────────────────────────────────────────────────
+// Categories
 api.get('/categories', validateToken, categoriesCtrl.list);
 api.get('/categories/:id', validateToken, categoriesCtrl.getById);
 api.post('/categories', validateToken, categoriesCtrl.create);
 api.put('/categories/:id', validateToken, categoriesCtrl.update);
 api.delete('/categories/:id', validateToken, categoriesCtrl.remove);
 
-// ── Price Lists ───────────────────────────────────────────────────────────
+// Price Lists
 api.get('/price-lists', validateToken, priceListsCtrl.list);
 api.get('/price-lists/:id', validateToken, priceListsCtrl.getById);
 api.post('/price-lists', validateToken, priceListsCtrl.create);
 api.put('/price-lists/:id', validateToken, priceListsCtrl.update);
 api.delete('/price-lists/:id', validateToken, priceListsCtrl.remove);
 
-// ── Batches (lotes) ───────────────────────────────────────────────────────
+// Batches (lotes)
 api.get('/batches', validateToken, batchesCtrl.list);
 api.get('/batches/:id', validateToken, batchesCtrl.getById);
 api.post('/batches', validateToken, batchesCtrl.create);
 api.put('/batches/:id', validateToken, batchesCtrl.update);
 api.delete('/batches/:id', validateToken, batchesCtrl.remove);
 
-// ── Serials (números de serie) ────────────────────────────────────────────
+// Serials (números de serie)
 api.get('/serials', validateToken, serialsCtrl.list);
 api.get('/serials/:id', validateToken, serialsCtrl.getById);
 api.post('/serials/bulk', validateToken, serialsCtrl.bulkCreate);

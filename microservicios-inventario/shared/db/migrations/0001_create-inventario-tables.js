@@ -5,7 +5,7 @@
 
 export async function up(queryInterface, Sequelize) {
 
-    // ── business_configs: configuración del negocio ──
+    // business_configs: configuración del negocio
     await queryInterface.createTable('business_configs', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -20,7 +20,7 @@ export async function up(queryInterface, Sequelize) {
         updatedAt: { type: Sequelize.DATE, allowNull: false, defaultValue: Sequelize.literal('CURRENT_TIMESTAMP') },
     });
 
-    // ── branches: sucursales ──
+    // branches: sucursales
     await queryInterface.createTable('branches', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -33,7 +33,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('branches', ['active']);
 
-    // ── categories: categorías de productos (self-referencing) ──
+    // categories: categorías de productos (self-referencing)
     await queryInterface.createTable('categories', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -46,7 +46,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('categories', ['parent_id']);
     await queryInterface.addIndex('categories', ['active']);
 
-    // ── products: catálogo de productos ──
+    // products: catálogo de productos
     await queryInterface.createTable('products', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -70,7 +70,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('products', ['category_id']);
     await queryInterface.addIndex('products', ['active']);
 
-    // ── product_variants: variantes de producto (talle, color, etc.) ──
+    // product_variants: variantes de producto (talle, color, etc.)
     await queryInterface.createTable('product_variants', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         product_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'products', key: 'id' }, onDelete: 'CASCADE' },
@@ -86,7 +86,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('product_variants', ['product_id']);
     await queryInterface.addIndex('product_variants', ['sku']);
 
-    // ── stock: stock por sucursal ──
+    // stock: stock por sucursal
     await queryInterface.createTable('stock', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         product_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'products', key: 'id' }, onDelete: 'CASCADE' },
@@ -100,7 +100,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('stock', ['product_id', 'variant_id', 'branch_id'], { unique: true, name: 'idx_stock_unique' });
     await queryInterface.addIndex('stock', ['branch_id']);
 
-    // ── stock_movements: movimientos de stock ──
+    // stock_movements: movimientos de stock
     await queryInterface.createTable('stock_movements', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         product_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'products', key: 'id' }, onDelete: 'CASCADE' },
@@ -123,7 +123,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('stock_movements', ['type']);
     await queryInterface.addIndex('stock_movements', ['reference_type', 'reference_id']);
 
-    // ── stock_transfers: transferencias entre sucursales ──
+    // stock_transfers: transferencias entre sucursales
     await queryInterface.createTable('stock_transfers', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         from_branch_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'branches', key: 'id' }, onDelete: 'CASCADE' },
@@ -140,7 +140,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('stock_transfers', ['from_branch_id']);
     await queryInterface.addIndex('stock_transfers', ['to_branch_id']);
 
-    // ── stock_transfer_items: items de transferencia ──
+    // stock_transfer_items: items de transferencia
     await queryInterface.createTable('stock_transfer_items', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         transfer_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'stock_transfers', key: 'id' }, onDelete: 'CASCADE' },
@@ -153,7 +153,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('stock_transfer_items', ['transfer_id']);
 
-    // ── suppliers: proveedores ──
+    // suppliers: proveedores
     await queryInterface.createTable('suppliers', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -170,7 +170,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('suppliers', ['active']);
 
-    // ── purchase_orders: órdenes de compra ──
+    // purchase_orders: órdenes de compra
     await queryInterface.createTable('purchase_orders', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         supplier_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'suppliers', key: 'id' }, onDelete: 'RESTRICT' },
@@ -191,7 +191,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('purchase_orders', ['supplier_id']);
     await queryInterface.addIndex('purchase_orders', ['branch_id']);
 
-    // ── purchase_order_items: items de orden de compra ──
+    // purchase_order_items: items de orden de compra
     await queryInterface.createTable('purchase_order_items', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         purchase_order_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'purchase_orders', key: 'id' }, onDelete: 'CASCADE' },
@@ -206,7 +206,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('purchase_order_items', ['purchase_order_id']);
 
-    // ── customers: clientes del negocio ──
+    // customers: clientes del negocio
     await queryInterface.createTable('customers', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -227,7 +227,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('customers', ['type']);
     await queryInterface.addIndex('customers', ['tax_id']);
 
-    // ── sales: ventas/tickets ──
+    // sales: ventas/tickets
     await queryInterface.createTable('sales', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         branch_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'branches', key: 'id' }, onDelete: 'RESTRICT' },
@@ -255,7 +255,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('sales', ['sale_number']);
     await queryInterface.addIndex('sales', ['completed_at']);
 
-    // ── sale_items: items de venta ──
+    // sale_items: items de venta
     await queryInterface.createTable('sale_items', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         sale_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'sales', key: 'id' }, onDelete: 'CASCADE' },
@@ -272,7 +272,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('sale_items', ['sale_id']);
     await queryInterface.addIndex('sale_items', ['product_id']);
 
-    // ── sale_payments: pagos mixtos de una venta ──
+    // sale_payments: pagos mixtos de una venta
     await queryInterface.createTable('sale_payments', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         sale_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'sales', key: 'id' }, onDelete: 'CASCADE' },
@@ -284,7 +284,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('sale_payments', ['sale_id']);
 
-    // ── price_lists: listas de precios ──
+    // price_lists: listas de precios
     await queryInterface.createTable('price_lists', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         name: { type: Sequelize.STRING, allowNull: false },
@@ -295,7 +295,7 @@ export async function up(queryInterface, Sequelize) {
     });
     await queryInterface.addIndex('price_lists', ['active']);
 
-    // ── price_list_items: precios por lista ──
+    // price_list_items: precios por lista
     await queryInterface.createTable('price_list_items', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         price_list_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'price_lists', key: 'id' }, onDelete: 'CASCADE' },
@@ -308,7 +308,7 @@ export async function up(queryInterface, Sequelize) {
     await queryInterface.addIndex('price_list_items', ['price_list_id']);
     await queryInterface.addIndex('price_list_items', ['price_list_id', 'product_id', 'variant_id'], { unique: true, name: 'idx_price_list_product_variant' });
 
-    // ── cash_registers: caja ──
+    // cash_registers: caja
     await queryInterface.createTable('cash_registers', {
         id: { type: Sequelize.INTEGER, primaryKey: true, autoIncrement: true },
         branch_id: { type: Sequelize.INTEGER, allowNull: false, references: { model: 'branches', key: 'id' }, onDelete: 'CASCADE' },
