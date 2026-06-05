@@ -33,9 +33,11 @@ logs:
 migrate:
 	docker compose -f $(MICROS) exec inventario_ms_productos node db/migrations/runner.js
 
-## seed: carga de datos iniciales (pendiente de implementar)
+## seed: crea el admin de auth y carga datos demo de negocio
+##       (shared/db se monta como db/ en cada microservicio)
 seed:
-	@echo "seed pendiente"
+	docker compose -f $(ROOT) exec -T inventario_auth npm run create-admin
+	docker compose -f $(MICROS) exec -T inventario_ms_productos node db/seed.js
 
 ## ps: estado de todos los contenedores del proyecto
 ps:
