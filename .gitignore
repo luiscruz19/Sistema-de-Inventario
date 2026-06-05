@@ -43,3 +43,4 @@ deploy.sh
 !.env.deploy.example
 google-cloud-sdk/
 google-cloud-cli-*.tar.gz
+docker-compose.verify.yml
