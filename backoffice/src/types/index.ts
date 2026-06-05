@@ -291,9 +291,7 @@ export interface ApiResponse<T = unknown> {
     pagination?: Pagination;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
 // Facturación electrónica (AFIP/ARCA)
-// ─────────────────────────────────────────────────────────────────────────
 
 export type InvoiceDocType =
     | 'A' | 'B' | 'C'
@@ -425,9 +423,7 @@ export interface IntegrationSummary {
     updatedAt: string;
 }
 
-// ─────────────────────────────────────────────────────────────────────────
 // Dashboard BI / KPIs
-// ─────────────────────────────────────────────────────────────────────────
 
 export interface SalesVsPrevMonth {
     current_month: { total: number; count: number };

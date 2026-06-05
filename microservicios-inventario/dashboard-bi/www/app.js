@@ -25,10 +25,7 @@ sequelize.authenticate()
     .then(() => console.log('Conexión a base de datos establecida (Inventario - Dashboard BI)'))
     .catch((err) => console.error('Error conectando a la base de datos:', err));
 
-// /system/* 
 app.use('/system', systemRoutes);
-
-
 app.use('/', routes);
 
 app.get('/health', (req, res) => {

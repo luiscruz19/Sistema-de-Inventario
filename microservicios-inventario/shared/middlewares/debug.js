@@ -93,7 +93,6 @@ export default (req, res, next) => {
         console.info('   Body: (vacío)');
     }
 
-
     const originalSend = res.send;
     const originalJson = res.json;
     const startTime = Date.now();
@@ -113,7 +112,6 @@ export default (req, res, next) => {
         console.info('INFORMACION DE RESPUESTA:');
         console.info('   Status Code:', res.statusCode);
         console.info('   Duración:', duration + 'ms');
-
 
         return data;
     };

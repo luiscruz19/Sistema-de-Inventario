@@ -13,7 +13,7 @@ import { toast } from '@/hooks/use-toast'
 import { FileText, CreditCard, CheckCircle, AlertTriangle, XCircle } from 'lucide-react'
 import type { IntegrationSummary } from '@/types'
 
-// ─── badge de estado por integración ────────────────────────────────────────
+// Badge de estado por integración
 function IntegrationStatusBadge({ integration }: { integration: IntegrationSummary | null }) {
     if (!integration || !integration.enabled || !integration.has_credentials) {
         return <Badge variant="secondary"><XCircle className="h-3 w-3 mr-1" /> Sin configurar</Badge>
@@ -40,25 +40,25 @@ function IntegrationStatusBadge({ integration }: { integration: IntegrationSumma
 export default function IntegracionesPage() {
     const { state, loading, save, saveArca, testArca, saveIntegration, getIntegration } = useFiscalConfig()
 
-    // ── Datos fiscales base ──────────────────────────────────────────────
+    // Datos fiscales base
     const [cuit, setCuit] = useState('')
     const [businessName, setBusinessName] = useState('')
     const [ptoVta, setPtoVta] = useState('1')
     const [ivaCondition, setIvaCondition] = useState('monotributo')
 
-    // ── ARCA ─────────────────────────────────────────────────────────────
+    // ARCA
     const [arcaEnvironment, setArcaEnvironment] = useState<'testing' | 'production'>('testing')
     const [certPem, setCertPem] = useState('')
     const [keyPem, setKeyPem] = useState('')
     const [arcaEnabled, setArcaEnabled] = useState(false)
 
-    // ── MercadoPago ──────────────────────────────────────────────────────
+    // MercadoPago
     const [mpAccessToken, setMpAccessToken] = useState('')
     const [mpPublicKey, setMpPublicKey] = useState('')
     const [mpEnabled, setMpEnabled] = useState(false)
     const [showMpToken, setShowMpToken] = useState(false)
 
-    // ── UI state ─────────────────────────────────────────────────────────
+    // UI state
     const [testing, setTesting] = useState(false)
     const [saving, setSaving] = useState(false)
     const [savingMp, setSavingMp] = useState(false)
@@ -163,7 +163,7 @@ export default function IntegracionesPage() {
                 Conectá tu negocio con proveedores externos (AFIP/ARCA, MercadoPago, etc.)
             </p>
 
-            {/* ── Datos fiscales base ──────────────────────────────────── */}
+            {/* Datos fiscales base */}
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
@@ -205,7 +205,7 @@ export default function IntegracionesPage() {
                 </CardContent>
             </Card>
 
-            {/* ── ARCA / AFIP ──────────────────────────────────────────── */}
+            {/* ARCA / AFIP */}
             <Card className="mb-6">
                 <CardHeader>
                     <div className="flex items-center justify-between">
@@ -291,7 +291,7 @@ export default function IntegracionesPage() {
                 </CardContent>
             </Card>
 
-            {/* ── MercadoPago ──────────────────────────────────────────── */}
+            {/* MercadoPago */}
             <Card className="mb-6">
                 <CardHeader>
                     <div className="flex items-center justify-between">

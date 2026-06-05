@@ -28,7 +28,6 @@ sequelize.authenticate()
 // Rutas /system/* (provisioning, health, etc.)
 app.use('/system', systemRoutes);
 
-
 // Rutas de negocio
 app.use('/', routes);
 
