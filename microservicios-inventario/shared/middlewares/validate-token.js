@@ -1,9 +1,7 @@
 import connection from '../utils/connection.js';
 import { errorMessage } from '../utils/messages.js';
 import CONFIG from '../config/config.js';
-import messages from '../config/messages.js';
 
-const { generic } = messages;
 const { AUTH_API_URL } = CONFIG;
 
 export default async (req, res, next) => {
@@ -15,7 +13,7 @@ export default async (req, res, next) => {
     const token = headerToken || bearerToken;
 
     if (!token) {
-        return res.status(401).json(errorMessage({ message: generic.token_not_found }));
+        return res.status(401).json(errorMessage({ message: 'Token no encontrado.' }));
     }
 
     const response = await connection({
@@ -25,7 +23,7 @@ export default async (req, res, next) => {
     });
 
     if (!response?.status || response.status <= 0) {
-        return res.status(401).json(response ?? errorMessage({ message: generic.token_invalid }));
+        return res.status(401).json(response ?? errorMessage({ message: 'Token invalido o expirado.' }));
     }
 
     req.user = response.user;
