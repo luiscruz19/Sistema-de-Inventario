@@ -1,24 +1,24 @@
 networks:
-    net-shared:
-        name: net-shared
-        external: true
+  net-shared:
+    name: net-shared
+    external: true
 
 services:
-    inventario_backoffice:
-        build:
-            context: ./backoffice
-            dockerfile: Dockerfile.production
-        image: registry.gitlab.com/sda.dev1/sda.dev/general/inventario-backoffice:${TAG}
-        container_name: inventario_backoffice
-        restart: always
-        labels:
-            - "traefik.enable=true"
-            - "traefik.docker.network=net-shared"
-            - "traefik.http.routers.inventario_backoffice.rule=Host(`pymes.sda.ovh`)"
-            - "traefik.http.routers.inventario_backoffice.entrypoints=web"
-            - "traefik.http.services.inventario_backoffice.loadbalancer.server.port=3000"
-        env_file:
-            - ${APP_ENV_FILE:-../../.env.production}
-        environment:
-            - NODE_ENV=production
-        networks: [net-shared]
+  inventario_backoffice:
+    build:
+      context: ./backoffice
+      dockerfile: Dockerfile.production
+    image: registry.gitlab.com/sda.dev1/sda.dev/general/inventario-backoffice:${TAG}
+    container_name: inventario_backoffice
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=net-shared"
+      - "traefik.http.routers.inventario_backoffice.rule=Host(`pymes.sda.ovh`)"
+      - "traefik.http.routers.inventario_backoffice.entrypoints=web"
+      - "traefik.http.services.inventario_backoffice.loadbalancer.server.port=3000"
+    env_file:
+      - ${APP_ENV_FILE:-../../.env.production}
+    environment:
+      - NODE_ENV=production
+    networks: [net-shared]
