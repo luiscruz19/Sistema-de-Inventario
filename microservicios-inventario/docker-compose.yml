@@ -1,0 +1,230 @@
+services:
+    ###### PRODUCTOS ######
+    inventario_ms_productos:
+        build:
+            context: ./productos
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_productos
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=productos
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./productos:/usr/src/inventario-productos
+            - ./shared/config:/usr/src/inventario-productos/config
+            - ./shared/db:/usr/src/inventario-productos/db
+            - ./shared/integrations:/usr/src/inventario-productos/integrations
+            - ./shared/middlewares:/usr/src/inventario-productos/middlewares
+            - ./shared/models:/usr/src/inventario-productos/models
+            - ./shared/requests:/usr/src/inventario-productos/requests
+            - ./shared/utils:/usr/src/inventario-productos/utils
+            - /usr/src/inventario-productos/node_modules
+        networks:
+            - net-shared
+    ###### STOCK ######
+    inventario_ms_stock:
+        build:
+            context: ./stock
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_stock
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=stock
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./stock:/usr/src/inventario-stock
+            - ./shared/config:/usr/src/inventario-stock/config
+            - ./shared/db:/usr/src/inventario-stock/db
+            - ./shared/integrations:/usr/src/inventario-stock/integrations
+            - ./shared/middlewares:/usr/src/inventario-stock/middlewares
+            - ./shared/models:/usr/src/inventario-stock/models
+            - ./shared/requests:/usr/src/inventario-stock/requests
+            - ./shared/utils:/usr/src/inventario-stock/utils
+            - /usr/src/inventario-stock/node_modules
+        networks:
+            - net-shared
+    ###### VENTAS ######
+    inventario_ms_ventas:
+        build:
+            context: ./ventas
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_ventas
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=ventas
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./ventas:/usr/src/inventario-ventas
+            - ./shared/config:/usr/src/inventario-ventas/config
+            - ./shared/db:/usr/src/inventario-ventas/db
+            - ./shared/integrations:/usr/src/inventario-ventas/integrations
+            - ./shared/middlewares:/usr/src/inventario-ventas/middlewares
+            - ./shared/models:/usr/src/inventario-ventas/models
+            - ./shared/requests:/usr/src/inventario-ventas/requests
+            - ./shared/utils:/usr/src/inventario-ventas/utils
+            - /usr/src/inventario-ventas/node_modules
+        networks:
+            - net-shared
+    ###### COMPRAS ######
+    inventario_ms_compras:
+        build:
+            context: ./compras
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_compras
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=compras
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./compras:/usr/src/inventario-compras
+            - ./shared/config:/usr/src/inventario-compras/config
+            - ./shared/db:/usr/src/inventario-compras/db
+            - ./shared/integrations:/usr/src/inventario-compras/integrations
+            - ./shared/middlewares:/usr/src/inventario-compras/middlewares
+            - ./shared/models:/usr/src/inventario-compras/models
+            - ./shared/requests:/usr/src/inventario-compras/requests
+            - ./shared/utils:/usr/src/inventario-compras/utils
+            - /usr/src/inventario-compras/node_modules
+        networks:
+            - net-shared
+    ###### FACTURACION ######
+    inventario_ms_facturacion:
+        build:
+            context: ./facturacion
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_facturacion
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=facturacion
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./facturacion:/usr/src/inventario-facturacion
+            - ./shared/config:/usr/src/inventario-facturacion/config
+            - ./shared/db:/usr/src/inventario-facturacion/db
+            - ./shared/integrations:/usr/src/inventario-facturacion/integrations
+            - ./shared/middlewares:/usr/src/inventario-facturacion/middlewares
+            - ./shared/models:/usr/src/inventario-facturacion/models
+            - ./shared/requests:/usr/src/inventario-facturacion/requests
+            - ./shared/utils:/usr/src/inventario-facturacion/utils
+            - /usr/src/inventario-facturacion/node_modules
+        networks:
+            - net-shared
+    ###### DASHBOARD-BI ######
+    inventario_ms_dashboard-bi:
+        build:
+            context: ./dashboard-bi
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_dashboard-bi
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=dashboard-bi
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./dashboard-bi:/usr/src/inventario-dashboard-bi
+            - ./shared/config:/usr/src/inventario-dashboard-bi/config
+            - ./shared/db:/usr/src/inventario-dashboard-bi/db
+            - ./shared/integrations:/usr/src/inventario-dashboard-bi/integrations
+            - ./shared/middlewares:/usr/src/inventario-dashboard-bi/middlewares
+            - ./shared/models:/usr/src/inventario-dashboard-bi/models
+            - ./shared/requests:/usr/src/inventario-dashboard-bi/requests
+            - ./shared/utils:/usr/src/inventario-dashboard-bi/utils
+            - /usr/src/inventario-dashboard-bi/node_modules
+        networks:
+            - net-shared
+    ###### CONTABILIDAD ######
+    inventario_ms_contabilidad:
+        build:
+            context: ./contabilidad
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_contabilidad
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=contabilidad
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./contabilidad:/usr/src/inventario-contabilidad
+            - ./shared/config:/usr/src/inventario-contabilidad/config
+            - ./shared/db:/usr/src/inventario-contabilidad/db
+            - ./shared/integrations:/usr/src/inventario-contabilidad/integrations
+            - ./shared/middlewares:/usr/src/inventario-contabilidad/middlewares
+            - ./shared/models:/usr/src/inventario-contabilidad/models
+            - ./shared/requests:/usr/src/inventario-contabilidad/requests
+            - ./shared/utils:/usr/src/inventario-contabilidad/utils
+            - /usr/src/inventario-contabilidad/node_modules
+        networks:
+            - net-shared
+    ###### TESORERIA ######
+    inventario_ms_tesoreria:
+        build:
+            context: ./tesoreria
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_tesoreria
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=tesoreria
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./tesoreria:/usr/src/inventario-tesoreria
+            - ./shared/config:/usr/src/inventario-tesoreria/config
+            - ./shared/db:/usr/src/inventario-tesoreria/db
+            - ./shared/integrations:/usr/src/inventario-tesoreria/integrations
+            - ./shared/middlewares:/usr/src/inventario-tesoreria/middlewares
+            - ./shared/models:/usr/src/inventario-tesoreria/models
+            - ./shared/requests:/usr/src/inventario-tesoreria/requests
+            - ./shared/utils:/usr/src/inventario-tesoreria/utils
+            - /usr/src/inventario-tesoreria/node_modules
+        networks:
+            - net-shared
+    ###### MARKETPLACE ######
+    inventario_ms_marketplace:
+        build:
+            context: ./marketplace
+            dockerfile: Dockerfile.development
+        container_name: inventario_ms_marketplace
+        restart: always
+        env_file:
+            - ../.env
+        environment:
+            - SERVICE_NAME=marketplace
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        volumes:
+            - ./marketplace:/usr/src/inventario-marketplace
+            - ./shared/config:/usr/src/inventario-marketplace/config
+            - ./shared/db:/usr/src/inventario-marketplace/db
+            - ./shared/integrations:/usr/src/inventario-marketplace/integrations
+            - ./shared/middlewares:/usr/src/inventario-marketplace/middlewares
+            - ./shared/models:/usr/src/inventario-marketplace/models
+            - ./shared/requests:/usr/src/inventario-marketplace/requests
+            - ./shared/utils:/usr/src/inventario-marketplace/utils
+            - /usr/src/inventario-marketplace/node_modules
+        networks:
+            - net-shared
+
+networks:
+    net-shared:
+        external: true

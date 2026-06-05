@@ -1,0 +1,32 @@
+{
+  "name": "mailer",
+  "version": "1.0.0",
+  "description": "Servicio de emails transaccionales canónico",
+  "main": "index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon -L index.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@mailchimp/mailchimp_marketing": "^3.0.80",
+    "@mailerlite/mailerlite-nodejs": "^1.6.0",
+    "axios": "^1.7.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "express": "^4.21.0",
+    "express-rate-limit": "^7.4.1",
+    "express-validator": "^7.1.0",
+    "helmet": "^8.0.0",
+    "jsonwebtoken": "^9.0.2",
+    "moment": "^2.30.1",
+    "mysql2": "^3.10.0",
+    "nodemailer": "^8.0.1",
+    "nodemon": "^3.1.4",
+    "sanitize-html": "^2.17.3",
+    "sequelize": "^6.37.3"
+  }
+}

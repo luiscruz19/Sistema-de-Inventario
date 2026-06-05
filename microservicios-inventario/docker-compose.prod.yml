@@ -1,0 +1,158 @@
+services:
+    ###### PRODUCTOS ######
+    inventario_ms_productos:
+        build:
+            context: .
+            dockerfile: ./productos/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-productos:${TAG:-latest}
+        container_name: inventario_ms_productos
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=productos
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### STOCK ######
+    inventario_ms_stock:
+        build:
+            context: .
+            dockerfile: ./stock/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-stock:${TAG:-latest}
+        container_name: inventario_ms_stock
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=stock
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### VENTAS ######
+    inventario_ms_ventas:
+        build:
+            context: .
+            dockerfile: ./ventas/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-ventas:${TAG:-latest}
+        container_name: inventario_ms_ventas
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=ventas
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### COMPRAS ######
+    inventario_ms_compras:
+        build:
+            context: .
+            dockerfile: ./compras/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-compras:${TAG:-latest}
+        container_name: inventario_ms_compras
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=compras
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### FACTURACION ######
+    inventario_ms_facturacion:
+        build:
+            context: .
+            dockerfile: ./facturacion/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-facturacion:${TAG:-latest}
+        container_name: inventario_ms_facturacion
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=facturacion
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### DASHBOARD-BI ######
+    inventario_ms_dashboard-bi:
+        build:
+            context: .
+            dockerfile: ./dashboard-bi/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-dashboard-bi:${TAG:-latest}
+        container_name: inventario_ms_dashboard-bi
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=dashboard-bi
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### CONTABILIDAD ######
+    inventario_ms_contabilidad:
+        build:
+            context: .
+            dockerfile: ./contabilidad/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-contabilidad:${TAG:-latest}
+        container_name: inventario_ms_contabilidad
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=contabilidad
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### TESORERIA ######
+    inventario_ms_tesoreria:
+        build:
+            context: .
+            dockerfile: ./tesoreria/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-tesoreria:${TAG:-latest}
+        container_name: inventario_ms_tesoreria
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=tesoreria
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+    ###### MARKETPLACE ######
+    inventario_ms_marketplace:
+        build:
+            context: .
+            dockerfile: ./marketplace/Dockerfile.production
+        image: ${REGISTRY:-local}/inventario-ms-marketplace:${TAG:-latest}
+        container_name: inventario_ms_marketplace
+        restart: always
+        env_file:
+            - ${APP_ENV_FILE_MICROS:-../.env}
+        environment:
+            - NODE_ENV=production
+            - SERVICE_NAME=marketplace
+            - DB_NAME_CLIENTES=inventario
+            - TZ=America/Argentina/Buenos_Aires
+        networks:
+            - net-shared
+
+networks:
+    net-shared:
+        external: true

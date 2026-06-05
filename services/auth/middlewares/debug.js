@@ -1,0 +1,190 @@
+export default (req, res, next) => {
+    if (process.env.NODE_ENV === 'production') {
+        return next();
+    }
+
+    const SENSITIVE_FIELDS = ['password', 'token', 'authorization', 'secret', 'mercadopagoaccesstoken', 'cbu', 'cuit'];
+    const sanitizeValue = (value) => {
+        if (Array.isArray(value)) return value.map(sanitizeValue);
+        if (!value || typeof value !== 'object') return value;
+        return Object.entries(value).reduce((acc, [key, current]) => {
+            const isSensitive = SENSITIVE_FIELDS.some(field => key.toLowerCase().includes(field));
+            acc[key] = isSensitive ? '[REDACTED]' : sanitizeValue(current);
+            return acc;
+        }, {});
+    };
+
+    const { path, body, query, params, method, headers, protocol, hostname, originalUrl, baseUrl } = req;
+
+    const timestamp = new Date();
+    const horaFormateada = timestamp.toLocaleString('es-AR', {
+        timeZone: 'America/Argentina/Buenos_Aires',
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+    });
+
+    const origen = headers.origin || headers.referer || 'Origen desconocido';
+    const ip = req.ip || req.connection?.remoteAddress || headers['x-forwarded-for'] || 'IP desconocida';
+    const userAgent = headers['user-agent'] || 'User-Agent desconocido';
+    const host = headers.host || 'Host desconocido';
+    const contentType = headers['content-type'] || 'No especificado';
+    const acceptLanguage = headers['accept-language'] || 'No especificado';
+    const authorization = headers.authorization ? 'Presente (Bearer/Token)' : 'No presente';
+    const fullUrl = `${protocol}://${hostname}${originalUrl}`;
+
+    console.info('');
+    console.info('='.repeat(100));
+    console.info('PETICION ENTRANTE - ' + horaFormateada);
+    console.info('='.repeat(100));
+    console.info('');
+    console.info('INFORMACION GENERAL:');
+    console.info('   Método HTTP:', method);
+    console.info('   URL Completa:', fullUrl);
+    console.info('   Path:', path);
+    console.info('   Base URL:', baseUrl || '/');
+    console.info('   Original URL:', originalUrl);
+    console.info('');
+    console.info('ORIGEN Y CLIENTE:');
+    console.info('   Origen:', origen);
+    console.info('   IP Cliente:', ip);
+    console.info('   Host:', host);
+    console.info('   User-Agent:', userAgent);
+    console.info('   Idioma:', acceptLanguage);
+    console.info('');
+    console.info('AUTENTICACION Y SEGURIDAD:');
+    console.info('   Authorization:', authorization);
+    console.info('   Content-Type:', contentType);
+    console.info('   Cookies:', headers.cookie ? 'Presentes' : 'No presentes');
+    console.info('');
+    console.info('DATOS DE ENTRADA:');
+
+    if (params && Object.keys(params).length > 0) {
+        console.info('   Params (Ruta):');
+        Object.entries(params).forEach(([key, value]) => {
+            console.info(`      ${key}: ${JSON.stringify(sanitizeValue(value))}`);
+        });
+    } else {
+        console.info('   Params: (vacío)');
+    }
+
+    if (query && Object.keys(query).length > 0) {
+        console.info('   Query (URL):');
+        Object.entries(query).forEach(([key, value]) => {
+            console.info(`      ${key}: ${JSON.stringify(sanitizeValue(value))}`);
+        });
+    } else {
+        console.info('   Query: (vacío)');
+    }
+
+    if (body && Object.keys(body).length > 0) {
+        console.info('   Body (Cuerpo):');
+        Object.entries(body).forEach(([key, value]) => {
+            const safeBodyValue = sanitizeValue(value);
+            const displayValue = typeof safeBodyValue === 'object'
+                ? JSON.stringify(safeBodyValue, null, 2).replace(/\n/g, '\n         ')
+                : safeBodyValue;
+            console.info(`      ${key}: ${displayValue}`);
+        });
+    } else {
+        console.info('   Body: (vacío)');
+    }
+
+    console.info('');
+    console.info('HEADERS PERSONALIZADOS:');
+    const customHeaders = Object.entries(headers)
+        .filter(([key]) => !['host', 'user-agent', 'accept-language', 'authorization', 'content-type', 'cookie', 'origin', 'referer'].includes(key))
+        .filter(([key]) => !key.startsWith('sec-') && !key.startsWith('accept'));
+
+    if (customHeaders.length > 0) {
+        customHeaders.forEach(([key, value]) => console.info(`   ${key}: ${value}`));
+    } else {
+        console.info('   (Ninguno)');
+    }
+
+    console.info('');
+    console.info('─'.repeat(100));
+
+    const originalSend = res.send;
+    const originalJson = res.json;
+    const startTime = Date.now();
+
+    const interceptResponse = function (data) {
+        const duration = Date.now() - startTime;
+        const horaRespuesta = new Date().toLocaleString('es-AR', {
+            timeZone: 'America/Argentina/Buenos_Aires',
+            hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+        });
+
+        console.info('');
+        console.info('='.repeat(100));
+        console.info('RESPUESTA ENVIADA - ' + horaRespuesta);
+        console.info('='.repeat(100));
+        console.info('');
+        console.info('INFORMACION DE RESPUESTA:');
+        console.info('   Status Code:', res.statusCode);
+        console.info('   Status Message:', res.statusMessage || getStatusMessage(res.statusCode));
+        console.info('   Duración:', duration + 'ms');
+        console.info('   Content-Type:', res.get('Content-Type') || 'No especificado');
+        console.info('');
+        console.info('HEADERS DE RESPUESTA:');
+        const responseHeaders = res.getHeaders();
+        if (Object.keys(responseHeaders).length > 0) {
+            Object.entries(responseHeaders).forEach(([key, value]) => console.info(`   ${key}: ${value}`));
+        } else {
+            console.info('   (Ninguno)');
+        }
+
+        console.info('');
+        console.info('DATOS DE RESPUESTA:');
+
+        try {
+            let responseData = data;
+            if (typeof data === 'string') {
+                try { responseData = JSON.parse(data); } catch { responseData = data; }
+            }
+            if (typeof responseData === 'object' && responseData !== null) {
+                console.info('   Tipo: Objeto/JSON');
+                console.info('   Contenido:');
+                const formatted = JSON.stringify(responseData, null, 2)
+                    .split('\n').map(line => '      ' + line).join('\n');
+                console.info(formatted);
+            } else {
+                console.info('   Tipo: ' + typeof responseData);
+                console.info('   Contenido:', responseData);
+            }
+            const responseSize = Buffer.byteLength(typeof data === 'string' ? data : JSON.stringify(data));
+            console.info('   Tamaño:', formatBytes(responseSize));
+        } catch {
+            console.info('   (Error al parsear respuesta)');
+        }
+
+        console.info('');
+        console.info('='.repeat(100));
+        console.info('PETICION COMPLETADA - Duración total: ' + duration + 'ms');
+        console.info('='.repeat(100));
+        console.info('');
+
+        return data;
+    };
+
+    res.send = function (data) { interceptResponse(data); return originalSend.call(this, data); };
+    res.json = function (data) { interceptResponse(data); return originalJson.call(this, data); };
+
+    next();
+};
+
+function getStatusMessage(status) {
+    const messages = {
+        200: 'OK', 201: 'Created', 204: 'No Content',
+        400: 'Bad Request', 401: 'Unauthorized', 403: 'Forbidden',
+        404: 'Not Found', 500: 'Internal Server Error',
+        502: 'Bad Gateway', 503: 'Service Unavailable',
+    };
+    return messages[status] || 'Unknown';
+}
+
+function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(2) + ' KB';
+    return (bytes / (1024 * 1024)).toFixed(2) + ' MB';
+}
