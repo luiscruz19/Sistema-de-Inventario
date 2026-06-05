@@ -1,3 +1,5 @@
+name: inventario-micros
+
 services:
   ###### PRODUCTOS ######
   inventario_ms_productos:

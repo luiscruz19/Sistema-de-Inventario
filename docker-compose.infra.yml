@@ -1,6 +1,8 @@
 # Infraestructura compartida del proyecto Inventario.
 # Levanta primero esto (crea la red net-shared) y luego docker-compose.yml.
 #   docker compose -f docker-compose.infra.yml up -d
+name: inventario-infra
+
 services:
   ###### MySQL ######
   mysql:
@@ -57,6 +59,7 @@ services:
 
 volumes:
   mysql_data:
+    name: inventario_mysql_data
 
 networks:
   net-shared:

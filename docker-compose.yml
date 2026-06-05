@@ -1,3 +1,5 @@
+name: inventario-app
+
 services:
   ###### BACKOFFICE (Panel de gestión de inventario) ######
   inventario_backoffice:
