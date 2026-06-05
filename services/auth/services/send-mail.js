@@ -1,12 +1,43 @@
+import nodemailer from 'nodemailer';
 import CONFIG from '../config/config.js';
-import connection from '../utils/connection.js';
+import logger from '../utils/logger.js';
 
-const { MAILER_URL } = CONFIG;
+const { MAILER } = CONFIG;
+
+let transporter = null;
+
+function getTransporter() {
+    if (transporter) return transporter;
+    if (!MAILER.SMTP_HOST || !MAILER.USER) return null;
+    transporter = nodemailer.createTransport({
+        host: MAILER.SMTP_HOST,
+        port: Number(MAILER.SMTP_PORT) || 587,
+        secure: MAILER.SMTP_SECURE,
+        auth: {
+            user: MAILER.USER,
+            pass: MAILER.PASSWORD,
+        },
+    });
+    return transporter;
+}
+
+function resolveFrom() {
+    const name = MAILER.FROM_NAME || 'App';
+    const email = MAILER.FROM_EMAIL || MAILER.USER;
+    return `${name} <${email}>`;
+}
 
 export default async function sendMailService({ to, subject, content }) {
-    if (!MAILER_URL) {
-        console.warn('[mailer] MAILER_API_URL not configured — email not sent to:', to);
+    const tx = getTransporter();
+    if (!tx) {
+        logger.warn('[mailer] SMTP no configurado — email no enviado a: ' + to);
         return { status: 0, message: 'Mailer not configured' };
     }
-    return connection({ method: 'POST', url: `${MAILER_URL}/send-email`, data: { to, subject, content } });
+    try {
+        await tx.sendMail({ from: resolveFrom(), to, subject, html: content });
+        return { status: 1, message: 'Email enviado' };
+    } catch (error) {
+        logger.error('sendMailService', { error: error?.message });
+        return { status: 0, message: 'Error al enviar el email' };
+    }
 }

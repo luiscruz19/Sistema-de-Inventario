@@ -46,24 +46,6 @@ services:
     networks:
       - net-shared
 
-  ###### MAILER (envío de emails SMTP) ######
-  inventario_mailer:
-    build:
-      context: ./services/mailer
-      dockerfile: Dockerfile.development
-    container_name: inventario_mailer
-    restart: always
-    env_file:
-      - ./.env
-    environment:
-      - NODE_ENV=development
-      - TZ=America/Argentina/Buenos_Aires
-    volumes:
-      - ./services/mailer:/app
-      - /app/node_modules
-    networks:
-      - net-shared
-
 networks:
   net-shared:
     external: true

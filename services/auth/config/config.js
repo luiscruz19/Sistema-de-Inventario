@@ -26,7 +26,18 @@ const CONFIG = {
         PORT: process.env.DB_PORT_AUTH || 3306,
         DIALECT: process.env.DB_DIALECT_AUTH || 'mysql',
     },
-    MAILER_URL: process.env.MAILER_API_URL || '',
+    MAILER: {
+        USER: process.env.MAILER_USER || '',
+        PASSWORD: process.env.MAILER_PASSWORD || '',
+        SMTP_HOST: process.env.MAILER_SMTP_HOST || '',
+        SMTP_PORT: process.env.MAILER_SMTP_PORT || 587,
+        SMTP_SECURE:
+            process.env.MAILER_SMTP_SECURE === 'yes' ||
+            process.env.MAILER_SMTP_SECURE === 'true' ||
+            process.env.MAILER_SMTP_SECURE === '1',
+        FROM_NAME: process.env.MAILER_FROM_NAME || process.env.APP_NAME || 'App',
+        FROM_EMAIL: process.env.MAILER_FROM_EMAIL || process.env.MAILER_USER || '',
+    },
     MICROSERVICES_URL: {
         USUARIOS: process.env.USUARIOS_API_URL || '',
     },

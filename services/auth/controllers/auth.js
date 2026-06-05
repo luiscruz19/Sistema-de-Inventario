@@ -11,7 +11,6 @@ import logger from '../utils/logger.js';
 import User from '../models/User.js';
 import LoginAttempt from '../models/LoginAttempt.js';
 import LoginLog from '../models/LoginLog.js';
-import { verifyTotpCode } from './totp.js';
 
 import sendMailService from '../services/send-mail.js';
 import signupTemplate from '../templates/signup.js';
@@ -114,23 +113,6 @@ export async function login(req, res) {
         }
         await resetAttempts(email, ip);
         const { dataValues: data } = user;
-
-        if (data.totp_enabled) {
-            const tempToken = jwt.sign(
-                { id: data.id, email: data.email, pending_2fa: true },
-                SECRET_KEY,
-                { expiresIn: '5m', algorithm: 'HS256' }
-            );
-            logLogin({ email, user_id: data.id, status: 'pending_2fa', ...meta });
-            return res.status(200).json(successMessage({
-                message: 'Se requiere verificación de segundo factor',
-                extra: {
-                    requires_2fa: true,
-                    temp_token: tempToken,
-                    user: { id: data.id },
-                },
-            }));
-        }
 
         logLogin({ email, user_id: data.id, status: 'success', ...meta });
         const token = User.prototype.generateToken({ id: data.id, email: data.email, remember_token: data.remember_token });

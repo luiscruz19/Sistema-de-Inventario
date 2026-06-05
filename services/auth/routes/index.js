@@ -7,6 +7,7 @@ import User from '../models/User.js';
 import messages from '../config/messages.js';
 import CONFIG from '../config/config.js';
 import { errorMessage, successMessage } from '../utils/messages.js';
+import sendMailService from '../services/send-mail.js';
 
 const { generic } = messages;
 
@@ -15,6 +16,19 @@ const api = Router();
 api.use('/auth', authRoutes);
 api.use('/user', [validateToken], usersRoutes);
 api.use('/admin', [validateToken], adminsRoutes);
+
+// Envío de emails vía SMTP (core unificado). Reemplaza al servicio mailer.
+api.post('/send-email', async (req, res) => {
+    const { to, subject, content } = req.body || {};
+    if (!to || !subject || !content) {
+        return res.status(400).json(errorMessage({ message: 'Faltan campos: to, subject, content' }));
+    }
+    const result = await sendMailService({ to, subject, content });
+    if (result.status === 1) {
+        return res.status(200).json(successMessage({ message: result.message }));
+    }
+    return res.status(500).json(errorMessage({ message: result.message }));
+});
 
 api.get('/health', (req, res) => {
     res.status(200).json({ status: 'OK', service: 'auth' });
