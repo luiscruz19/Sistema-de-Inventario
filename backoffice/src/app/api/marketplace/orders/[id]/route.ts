@@ -9,6 +9,6 @@ export async function GET(
 ) {
     const { id } = await params;
     const { token } = await getApiHeaders();
-    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/marketplace/orders/${id}`, token });
+    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.MARKETPLACE_SERVICE_URL, path: `/marketplace/orders/${id}`, token });
     return NextResponse.json(result);
 }

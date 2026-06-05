@@ -10,6 +10,6 @@ export async function GET(
     const { id } = await params;
     const { token } = await getApiHeaders();
     const queryParams = Object.fromEntries(request.nextUrl.searchParams.entries());
-    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/bank-accounts/${id}/movements`, token, params: queryParams });
+    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/bank-accounts/${id}/movements`, token, params: queryParams });
     return NextResponse.json(result);
 }

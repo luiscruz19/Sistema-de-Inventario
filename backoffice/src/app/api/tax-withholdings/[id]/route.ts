@@ -9,6 +9,6 @@ export async function GET(
 ) {
     const { id } = await params;
     const { token } = await getApiHeaders();
-    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/tax-withholdings/${id}`, token });
+    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CONTABILIDAD_SERVICE_URL, path: `/tax-withholdings/${id}`, token });
     return NextResponse.json(result);
 }

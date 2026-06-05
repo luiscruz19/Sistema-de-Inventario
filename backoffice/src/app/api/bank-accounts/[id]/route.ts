@@ -9,7 +9,7 @@ export async function GET(
 ) {
     const { id } = await params;
     const { token } = await getApiHeaders();
-    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/bank-accounts/${id}`, token });
+    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/bank-accounts/${id}`, token });
     return NextResponse.json(result);
 }
 
@@ -20,7 +20,7 @@ export async function PUT(
     const { id } = await params;
     const { token } = await getApiHeaders();
     const data = await request.json();
-    const result = await serviceRequest({ method: 'PUT', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/bank-accounts/${id}`, token, data });
+    const result = await serviceRequest({ method: 'PUT', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/bank-accounts/${id}`, token, data });
     return NextResponse.json(result);
 }
 
@@ -30,6 +30,6 @@ export async function DELETE(
 ) {
     const { id } = await params;
     const { token } = await getApiHeaders();
-    const result = await serviceRequest({ method: 'DELETE', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/bank-accounts/${id}`, token });
+    const result = await serviceRequest({ method: 'DELETE', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/bank-accounts/${id}`, token });
     return NextResponse.json(result);
 }

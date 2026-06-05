@@ -6,13 +6,13 @@ import CONFIG from '@/config/config';
 export async function GET(request: NextRequest) {
     const { token } = await getApiHeaders();
     const params = Object.fromEntries(request.nextUrl.searchParams.entries());
-    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CORE_SERVICE_URL, path: '/tax-settings', token, params });
+    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CONTABILIDAD_SERVICE_URL, path: '/tax-settings', token, params });
     return NextResponse.json(result);
 }
 
 export async function POST(request: NextRequest) {
     const { token } = await getApiHeaders();
     const data = await request.json();
-    const result = await serviceRequest({ method: 'POST', baseUrl: CONFIG.CORE_SERVICE_URL, path: '/tax-settings', token, data });
+    const result = await serviceRequest({ method: 'POST', baseUrl: CONFIG.CONTABILIDAD_SERVICE_URL, path: '/tax-settings', token, data });
     return NextResponse.json(result);
 }

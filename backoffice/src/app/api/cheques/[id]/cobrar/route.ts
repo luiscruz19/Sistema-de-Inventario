@@ -9,6 +9,6 @@ export async function PATCH(
 ) {
     const { id } = await params;
     const { token } = await getApiHeaders();
-    const result = await serviceRequest({ method: 'PATCH', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/cheques/${id}/cobrar`, token });
+    const result = await serviceRequest({ method: 'PATCH', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/cheques/${id}/cobrar`, token });
     return NextResponse.json(result);
 }

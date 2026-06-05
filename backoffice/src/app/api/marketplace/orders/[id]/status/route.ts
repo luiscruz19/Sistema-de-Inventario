@@ -10,6 +10,6 @@ export async function PATCH(
     const { id } = await params;
     const { token } = await getApiHeaders();
     const data = await request.json();
-    const result = await serviceRequest({ method: 'PATCH', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/marketplace/orders/${id}/status`, token, data });
+    const result = await serviceRequest({ method: 'PATCH', baseUrl: CONFIG.MARKETPLACE_SERVICE_URL, path: `/marketplace/orders/${id}/status`, token, data });
     return NextResponse.json(result);
 }

@@ -9,6 +9,6 @@ export async function GET(
 ) {
     const { id } = await params;
     const { token } = await getApiHeaders();
-    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.CORE_SERVICE_URL, path: `/bank-movements/${id}`, token });
+    const result = await serviceRequest({ method: 'GET', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/bank-movements/${id}`, token });
     return NextResponse.json(result);
 }
