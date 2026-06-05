@@ -54,12 +54,12 @@ export default function LoginPage() {
                 />
                 <div className="text-center">
                     <h1 className="text-2xl font-bold text-white mb-3">Inventario y Ventas</h1>
-                    <p className="text-slate-400 text-sm leading-relaxed">
+                    <p className="text-muted-foreground text-sm leading-relaxed">
                         Controlá tu stock, ventas, compras<br />y facturación en tiempo real.
                     </p>
                 </div>
                 <div className="mt-auto pt-16 text-center">
-                    <p className="text-xs text-slate-600">© SDA.dev · Todos los derechos reservados</p>
+                    <p className="text-xs text-muted-foreground">© SDA.dev · Todos los derechos reservados</p>
                 </div>
             </div>
 
@@ -73,27 +73,27 @@ export default function LoginPage() {
                             alt="SDA.dev"
                             className="h-10 mx-auto object-contain mb-3"
                         />
-                        <p className="text-sm font-medium text-slate-600">Inventario y Ventas</p>
+                        <p className="text-sm font-medium text-muted-foreground">Inventario y Ventas</p>
                     </div>
 
                     <div className="w-full max-w-sm">
                         <div className="mb-8">
-                            <h2 className="text-2xl font-bold text-slate-900">Iniciar sesión</h2>
-                            <p className="text-slate-500 text-sm mt-1">Accedé a tu panel de gestión</p>
+                            <h2 className="text-2xl font-bold text-foreground">Iniciar sesión</h2>
+                            <p className="text-muted-foreground text-sm mt-1">Accedé a tu panel de gestión</p>
                         </div>
 
                         <form onSubmit={handleSubmit} className="space-y-5">
                             {error && (
-                                <div className="flex items-center gap-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700">
+                                <div className="flex items-center gap-3 p-3 bg-destructive/10 border border-destructive/20 rounded-lg text-destructive">
                                     <AlertCircle className="h-4 w-4 flex-shrink-0" />
                                     <span className="text-sm">{error}</span>
                                 </div>
                             )}
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Email</label>
+                                <label className="block text-sm font-medium text-foreground mb-1.5">Email</label>
                                 <div className="relative">
-                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <input
                                         type="email"
                                         value={email}
@@ -106,9 +106,9 @@ export default function LoginPage() {
                             </div>
 
                             <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1.5">Contraseña</label>
+                                <label className="block text-sm font-medium text-foreground mb-1.5">Contraseña</label>
                                 <div className="relative">
-                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+                                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         value={password}
@@ -120,7 +120,7 @@ export default function LoginPage() {
                                     <button
                                         type="button"
                                         onClick={() => setShowPassword(!showPassword)}
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-muted-foreground transition-colors"
                                     >
                                         {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                                     </button>
@@ -144,8 +144,8 @@ export default function LoginPage() {
                 </div>
 
                 <div className="px-8 pb-6 text-center lg:hidden">
-                    <p className="text-xs text-slate-400">
-                        Desarrollado por <span className="font-medium text-slate-600">SDA.dev</span>
+                    <p className="text-xs text-muted-foreground">
+                        Desarrollado por <span className="font-medium text-muted-foreground">SDA.dev</span>
                     </p>
                 </div>
             </div>

@@ -49,7 +49,7 @@ export default function MovimientosPage() {
         { key: 'product', label: 'Producto', render: (_, row) => (
             <div>
                 <p className="font-medium">{row.product?.name || `#${row.product_id}`}</p>
-                {row.variant && <p className="text-xs text-gray-400">{row.variant.name}</p>}
+                {row.variant && <p className="text-xs text-muted-foreground">{row.variant.name}</p>}
             </div>
         )},
         { key: 'type', label: 'Tipo', render: (v) => {
@@ -58,17 +58,20 @@ export default function MovimientosPage() {
         }},
         { key: 'quantity', label: 'Cantidad', render: (v) => {
             const n = v as number
-            return <span className={n > 0 ? 'text-green-600 font-semibold' : 'text-red-600 font-semibold'}>{n > 0 ? `+${n}` : n}</span>
+            return <span className={n > 0 ? 'text-success font-semibold' : 'text-destructive font-semibold'}>{n > 0 ? `+${n}` : n}</span>
         }},
         { key: 'previous_stock', label: 'Anterior', render: (v) => v as number },
         { key: 'new_stock', label: 'Nuevo', render: (v) => <span className="font-semibold">{v as number}</span> },
         { key: 'branch', label: 'Sucursal', render: (_, row) => row.branch?.name || '-' },
-        { key: 'notes', label: 'Notas', render: (v) => <span className="text-xs text-gray-500 max-w-[200px] truncate block">{(v as string) || '-'}</span> },
+        { key: 'notes', label: 'Notas', render: (v) => <span className="text-xs text-muted-foreground max-w-[200px] truncate block">{(v as string) || '-'}</span> },
     ]
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6">Movimientos de stock</h1>
+            <div className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight">Movimientos de stock</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Historial de entradas, salidas y ajustes</p>
+            </div>
 
             <div className="flex flex-wrap gap-3 mb-4">
                 <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />

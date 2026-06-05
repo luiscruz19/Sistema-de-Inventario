@@ -81,7 +81,7 @@ export default function PublicacionesPage() {
                 <div>
                     <p className="text-sm font-medium">{v as string}</p>
                     {row.url && (
-                        <a href={row.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary-600 hover:underline">
+                        <a href={row.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
                             Ver publicacion
                         </a>
                     )}
@@ -113,10 +113,10 @@ export default function PublicacionesPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Tag className="h-6 w-6" /> Publicaciones de marketplace
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Productos publicados en canales externos</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Productos publicados en canales externos</p>
                 </div>
             </div>
 

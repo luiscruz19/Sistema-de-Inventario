@@ -166,10 +166,10 @@ export default function ChequesPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Receipt className="h-6 w-6" /> Cheques
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Cheques propios y de terceros</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Cheques propios y de terceros</p>
                 </div>
                 <Button onClick={() => { setForm(emptyForm); setShowModal(true) }}>
                     <Plus className="h-4 w-4 mr-2" /> Nuevo cheque
@@ -202,10 +202,10 @@ export default function ChequesPage() {
                     <div className="flex gap-1">
                         {row.status === 'pendiente' && (
                             <>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600 hover:text-green-800" title="Cobrar" onClick={() => updateStatus(row.id, 'cobrado')}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-success hover:text-success" title="Cobrar" onClick={() => updateStatus(row.id, 'cobrado')}>
                                     <CheckCircle className="h-4 w-4" />
                                 </Button>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" title="Rechazar" onClick={() => updateStatus(row.id, 'rechazado')}>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" title="Rechazar" onClick={() => updateStatus(row.id, 'rechazado')}>
                                     <XCircle className="h-4 w-4" />
                                 </Button>
                             </>

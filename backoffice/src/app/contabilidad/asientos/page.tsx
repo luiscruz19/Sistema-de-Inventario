@@ -164,10 +164,10 @@ export default function AsientosPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <FileSpreadsheet className="h-6 w-6" /> Asientos contables
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Journal entries del libro diario</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Journal entries del libro diario</p>
                 </div>
                 <Button onClick={() => setShowCreateModal(true)}>
                     <Plus className="h-4 w-4 mr-2" /> Nuevo asiento
@@ -229,16 +229,16 @@ export default function AsientosPage() {
                                 <table className="w-full text-sm">
                                     <thead>
                                         <tr className="border-b">
-                                            <th className="text-left pb-2 font-medium text-gray-500">ID Cuenta</th>
-                                            <th className="text-left pb-2 font-medium text-gray-500">Descripcion</th>
-                                            <th className="text-right pb-2 font-medium text-gray-500 w-28">Debito</th>
-                                            <th className="text-right pb-2 font-medium text-gray-500 w-28">Credito</th>
+                                            <th className="text-left pb-2 font-medium text-muted-foreground">ID Cuenta</th>
+                                            <th className="text-left pb-2 font-medium text-muted-foreground">Descripcion</th>
+                                            <th className="text-right pb-2 font-medium text-muted-foreground w-28">Debito</th>
+                                            <th className="text-right pb-2 font-medium text-muted-foreground w-28">Credito</th>
                                             <th className="w-8" />
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {lines.map((line, i) => (
-                                            <tr key={i} className="border-b border-gray-50">
+                                            <tr key={i} className="border-b border-border">
                                                 <td className="py-1 pr-2">
                                                     <Input
                                                         type="number"
@@ -278,7 +278,7 @@ export default function AsientosPage() {
                                                 </td>
                                                 <td className="py-1">
                                                     {lines.length > 2 && (
-                                                        <button onClick={() => removeLine(i)} className="text-gray-300 hover:text-red-500">
+                                                        <button onClick={() => removeLine(i)} className="text-muted-foreground/60 hover:text-destructive">
                                                             <XCircle className="h-4 w-4" />
                                                         </button>
                                                     )}
@@ -287,7 +287,7 @@ export default function AsientosPage() {
                                         ))}
                                     </tbody>
                                     <tfoot>
-                                        <tr className="border-t-2 border-gray-200">
+                                        <tr className="border-t-2 border-border">
                                             <td colSpan={2} className="pt-2 text-sm font-semibold text-right pr-2">Totales:</td>
                                             <td className="pt-2 text-right font-bold pr-2">{formatCurrency(totalDebits)}</td>
                                             <td className="pt-2 text-right font-bold pr-2">{formatCurrency(totalCredits)}</td>
@@ -297,12 +297,12 @@ export default function AsientosPage() {
                                 </table>
                             </div>
                             {!isBalanced && (totalDebits > 0 || totalCredits > 0) && (
-                                <p className="text-sm text-red-500 mt-2">
+                                <p className="text-sm text-destructive mt-2">
                                     El asiento no balancea. Diferencia: {formatCurrency(Math.abs(totalDebits - totalCredits))}
                                 </p>
                             )}
                             {isBalanced && totalDebits > 0 && (
-                                <p className="text-sm text-green-600 mt-2">Asiento balanceado</p>
+                                <p className="text-sm text-success mt-2">Asiento balanceado</p>
                             )}
                         </div>
                     </div>
@@ -331,12 +331,12 @@ export default function AsientosPage() {
                     </DialogHeader>
                     {selectedEntry && (
                         <div className="space-y-3">
-                            <p className="text-sm text-gray-500">Fecha: {selectedEntry.date ? (selectedEntry.date as string).split('T')[0] : '-'}</p>
+                            <p className="text-sm text-muted-foreground">Fecha: {selectedEntry.date ? (selectedEntry.date as string).split('T')[0] : '-'}</p>
                             <Separator />
                             {selectedEntry.lines && selectedEntry.lines.length > 0 && (
                                 <table className="w-full text-sm">
                                     <thead>
-                                        <tr className="border-b text-gray-500">
+                                        <tr className="border-b text-muted-foreground">
                                             <th className="text-left pb-1">Cuenta</th>
                                             <th className="text-right pb-1">Debito</th>
                                             <th className="text-right pb-1">Credito</th>
@@ -344,14 +344,14 @@ export default function AsientosPage() {
                                     </thead>
                                     <tbody>
                                         {selectedEntry.lines.map((line, i) => (
-                                            <tr key={i} className="border-b border-gray-50">
+                                            <tr key={i} className="border-b border-border">
                                                 <td className="py-1">
                                                     {line.account ? (
                                                         <span>{line.account.code} — {line.account.name}</span>
                                                     ) : (
-                                                        <span className="text-gray-400">#{line.account_id}</span>
+                                                        <span className="text-muted-foreground">#{line.account_id}</span>
                                                     )}
-                                                    {line.description && <span className="text-gray-400 ml-2 text-xs">({line.description})</span>}
+                                                    {line.description && <span className="text-muted-foreground ml-2 text-xs">({line.description})</span>}
                                                 </td>
                                                 <td className="py-1 text-right">{parseFloat(line.debit) > 0 ? formatCurrency(parseFloat(line.debit)) : '-'}</td>
                                                 <td className="py-1 text-right">{parseFloat(line.credit) > 0 ? formatCurrency(parseFloat(line.credit)) : '-'}</td>
@@ -359,7 +359,7 @@ export default function AsientosPage() {
                                         ))}
                                     </tbody>
                                     <tfoot>
-                                        <tr className="border-t-2 border-gray-200 font-semibold">
+                                        <tr className="border-t-2 border-border font-semibold">
                                             <td className="pt-1">Total</td>
                                             <td className="pt-1 text-right">{formatCurrency(selectedEntry.total)}</td>
                                             <td className="pt-1 text-right">{formatCurrency(selectedEntry.total)}</td>

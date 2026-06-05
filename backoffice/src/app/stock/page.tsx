@@ -78,7 +78,7 @@ export default function StockPage() {
         { key: 'product', label: 'Producto', render: (_, row) => (
             <div>
                 <p className="font-medium">{row.product?.name || `#${row.product_id}`}</p>
-                {row.product?.sku && <p className="text-xs text-gray-400 font-mono">{row.product.sku}</p>}
+                {row.product?.sku && <p className="text-xs text-muted-foreground font-mono">{row.product.sku}</p>}
             </div>
         )},
         { key: 'variant', label: 'Variante', render: (_, row) => row.variant?.name || '-' },
@@ -87,7 +87,7 @@ export default function StockPage() {
         { key: 'reserved_quantity', label: 'Reservado', render: (v) => v as number || 0 },
         { key: 'available', label: 'Disponible', render: (_, row) => {
             const avail = row.quantity - row.reserved_quantity
-            return <span className={avail <= 0 ? 'text-red-600 font-semibold' : 'font-semibold'}>{avail}</span>
+            return <span className={avail <= 0 ? 'text-destructive font-semibold' : 'font-semibold'}>{avail}</span>
         }},
         { key: 'alert', label: 'Alerta', render: (_, row) => (
             <StockBadge quantity={row.quantity} minAlert={row.product?.min_stock_alert ?? 0} reserved={row.reserved_quantity} />
@@ -99,7 +99,10 @@ export default function StockPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Stock por sucursal</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Stock por sucursal</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Existencias actuales y ajustes de inventario</p>
+                </div>
                 <Button onClick={() => setShowAdjustModal(true)}>
                     <SlidersHorizontal className="h-4 w-4 mr-2" /> Ajustar stock
                 </Button>

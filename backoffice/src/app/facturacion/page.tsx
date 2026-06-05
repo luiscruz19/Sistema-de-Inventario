@@ -46,7 +46,7 @@ export default function FacturacionPage() {
             render: (_, row) => (
                 <div>
                     <div className="font-medium">{row.doc_type} {row.full_number || `${row.pto_vta}-${row.number}`}</div>
-                    {row.mode === 'simulated' && <div className="text-[10px] text-yellow-700">Simulado</div>}
+                    {row.mode === 'simulated' && <div className="text-[10px] text-warning">Simulado</div>}
                 </div>
             ),
         },
@@ -82,10 +82,10 @@ export default function FacturacionPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
-                        <FileText className="h-6 w-6 text-primary-600" /> Facturación electrónica
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
+                        <FileText className="h-6 w-6 text-primary" /> Facturación electrónica
                     </h1>
-                    <p className="text-sm text-gray-500">Comprobantes emitidos — AFIP / ARCA</p>
+                    <p className="text-sm text-muted-foreground">Comprobantes emitidos — AFIP / ARCA</p>
                 </div>
                 <Link href="/inventario/facturacion/emitir">
                     <Button><Plus className="h-4 w-4 mr-2" /> Emitir factura</Button>

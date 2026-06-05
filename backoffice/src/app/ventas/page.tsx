@@ -193,8 +193,8 @@ export default function PuntoDeVentaPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold">Punto de Venta</h1>
-                    <p className="text-sm text-gray-500 mt-1">{cart.length} items en el carrito</p>
+                    <h1 className="text-2xl font-semibold tracking-tight">Punto de Venta</h1>
+                    <p className="text-sm text-muted-foreground mt-1">{cart.length} items en el carrito</p>
                 </div>
             </div>
 
@@ -204,8 +204,8 @@ export default function PuntoDeVentaPage() {
                     <Card>
                         <CardContent className="p-4">
                             <div className="relative">
-                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                                <Barcode className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-300" />
+                                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                                <Barcode className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground/60" />
                                 <Input
                                     ref={searchRef}
                                     placeholder="Buscar por nombre, SKU o codigo de barras..."
@@ -221,33 +221,33 @@ export default function PuntoDeVentaPage() {
                         <Card>
                             <CardContent className="p-0">
                                 {searching ? (
-                                    <div className="p-8 text-center text-gray-400">Buscando...</div>
+                                    <div className="p-8 text-center text-muted-foreground">Buscando...</div>
                                 ) : searchResults.length === 0 ? (
-                                    <div className="p-8 text-center text-gray-400">No se encontraron productos</div>
+                                    <div className="p-8 text-center text-muted-foreground">No se encontraron productos</div>
                                 ) : (
-                                    <div className="divide-y divide-gray-100">
+                                    <div className="divide-y divide-border">
                                         {searchResults.map((product) => (
                                             <div key={product.id}>
                                                 <button
                                                     onClick={() => addToCart(product)}
-                                                    className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 transition-colors text-left"
+                                                    className="w-full flex items-center gap-4 p-4 hover:bg-muted transition-colors text-left"
                                                 >
-                                                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400 shrink-0">
+                                                    <div className="w-12 h-12 bg-muted rounded-lg flex items-center justify-center text-muted-foreground shrink-0">
                                                         <ShoppingCart className="h-5 w-5" />
                                                     </div>
                                                     <div className="flex-1 min-w-0">
                                                         <p className="font-medium truncate">{product.name}</p>
                                                         <div className="flex items-center gap-2 mt-0.5">
-                                                            {product.sku && <span className="text-xs text-gray-400">SKU: {product.sku}</span>}
-                                                            {product.barcode && <span className="text-xs text-gray-400">COD: {product.barcode}</span>}
+                                                            {product.sku && <span className="text-xs text-muted-foreground">SKU: {product.sku}</span>}
+                                                            {product.barcode && <span className="text-xs text-muted-foreground">COD: {product.barcode}</span>}
                                                         </div>
                                                     </div>
                                                     <div className="text-right shrink-0">
-                                                        <p className="font-semibold text-primary-600">{formatCurrency(product.sale_price)}</p>
+                                                        <p className="font-semibold text-primary">{formatCurrency(product.sale_price)}</p>
                                                         {product.track_stock && (() => {
                                                             const stock = product.stockEntries?.reduce((s, e) => s + e.quantity - e.reserved_quantity, 0)
                                                             if (stock === undefined || stock === null) {
-                                                                return <p className="text-xs text-gray-400 mt-0.5">Stock: ?</p>
+                                                                return <p className="text-xs text-muted-foreground mt-0.5">Stock: ?</p>
                                                             }
                                                             const alert = product.min_stock_alert ?? 0
                                                             const variant = stock <= 0 ? 'destructive' : stock <= alert ? 'warning' : 'success'
@@ -256,7 +256,7 @@ export default function PuntoDeVentaPage() {
                                                             )
                                                         })()}
                                                     </div>
-                                                    <Plus className="h-5 w-5 text-gray-400 shrink-0" />
+                                                    <Plus className="h-5 w-5 text-muted-foreground shrink-0" />
                                                 </button>
                                                 {product.variants && product.variants.length > 0 && (
                                                     <div className="px-4 pb-3 flex flex-wrap gap-2">
@@ -287,19 +287,19 @@ export default function PuntoDeVentaPage() {
                         </CardHeader>
                         <CardContent className="p-0">
                             {cart.length === 0 ? (
-                                <div className="p-8 text-center text-gray-400">
+                                <div className="p-8 text-center text-muted-foreground">
                                     <ShoppingCart className="h-12 w-12 mx-auto mb-3 opacity-30" />
                                     <p>Agrega productos para iniciar la venta</p>
                                     <p className="text-xs mt-1">Busca por nombre, SKU o escanea un codigo de barras</p>
                                 </div>
                             ) : (
-                                <div className="divide-y divide-gray-100">
+                                <div className="divide-y divide-border">
                                     {cart.map((item, idx) => (
                                         <div key={`${item.product.id}-${item.variantId}`} className="flex items-center gap-3 px-4 py-3">
                                             <div className="flex-1 min-w-0">
                                                 <p className="font-medium text-sm truncate">{item.product.name}</p>
-                                                {item.variantName && <p className="text-xs text-gray-400">{item.variantName}</p>}
-                                                <p className="text-xs text-gray-500">{formatCurrency(item.unitPrice)} c/u</p>
+                                                {item.variantName && <p className="text-xs text-muted-foreground">{item.variantName}</p>}
+                                                <p className="text-xs text-muted-foreground">{formatCurrency(item.unitPrice)} c/u</p>
                                             </div>
                                             <div className="flex items-center gap-1">
                                                 <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => updateQuantity(idx, -1)}>
@@ -321,7 +321,7 @@ export default function PuntoDeVentaPage() {
                                             <div className="w-24 text-right">
                                                 <p className="font-semibold text-sm">{formatCurrency(item.unitPrice * item.quantity)}</p>
                                             </div>
-                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700 hover:bg-red-50" onClick={() => removeItem(idx)}>
+                                            <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive/80 hover:bg-destructive/10" onClick={() => removeItem(idx)}>
                                                 <Trash2 className="h-3.5 w-3.5" />
                                             </Button>
                                         </div>
@@ -407,23 +407,23 @@ export default function PuntoDeVentaPage() {
                         </CardHeader>
                         <CardContent className="space-y-2">
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
+                                <span className="text-muted-foreground">Subtotal ({cart.reduce((s, i) => s + i.quantity, 0)} items)</span>
                                 <span>{formatCurrency(subtotal)}</span>
                             </div>
                             {discountAmount > 0 && (
-                                <div className="flex justify-between text-sm text-green-600">
+                                <div className="flex justify-between text-sm text-success">
                                     <span>Descuento</span>
                                     <span>-{formatCurrency(discountAmount)}</span>
                                 </div>
                             )}
                             <div className="flex justify-between text-sm">
-                                <span className="text-gray-500">IVA (21%)</span>
+                                <span className="text-muted-foreground">IVA (21%)</span>
                                 <span>{formatCurrency(taxAmount)}</span>
                             </div>
                             <Separator />
                             <div className="flex justify-between text-xl font-bold pt-1">
                                 <span>Total</span>
-                                <span className="text-primary-600">{formatCurrency(total)}</span>
+                                <span className="text-primary">{formatCurrency(total)}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -530,12 +530,12 @@ export default function PuntoDeVentaPage() {
                         <Separator />
                         <div className="flex justify-between text-sm">
                             <span>Suma parciales</span>
-                            <span className={mixedTotal >= total ? 'text-green-600' : 'text-red-600'}>
+                            <span className={mixedTotal >= total ? 'text-success' : 'text-destructive'}>
                                 {formatCurrency(mixedTotal)}
                             </span>
                         </div>
                         {mixedTotal < total && (
-                            <p className="text-xs text-red-500">Faltan {formatCurrency(total - mixedTotal)} para cubrir el total</p>
+                            <p className="text-xs text-destructive">Faltan {formatCurrency(total - mixedTotal)} para cubrir el total</p>
                         )}
                     </div>
                     <DialogFooter>
@@ -555,8 +555,8 @@ export default function PuntoDeVentaPage() {
                         <DialogDescription>Se registrara la venta</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-2 text-sm">
-                        <div className="flex justify-between"><span className="text-gray-500">Items</span><span>{cart.reduce((s, i) => s + i.quantity, 0)}</span></div>
-                        <div className="flex justify-between"><span className="text-gray-500">Metodo</span><span className="capitalize">{paymentMethod}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Items</span><span>{cart.reduce((s, i) => s + i.quantity, 0)}</span></div>
+                        <div className="flex justify-between"><span className="text-muted-foreground">Metodo</span><span className="capitalize">{paymentMethod}</span></div>
                         <div className="flex justify-between text-lg font-bold"><span>Total</span><span>{formatCurrency(total)}</span></div>
                     </div>
                     <DialogFooter>
@@ -576,14 +576,14 @@ export default function PuntoDeVentaPage() {
                         <DialogDescription>La venta fue registrada exitosamente</DialogDescription>
                     </DialogHeader>
                     <div className="text-center py-4">
-                        <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                            <Check className="h-8 w-8 text-green-600" />
+                        <div className="w-16 h-16 bg-success/10 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Check className="h-8 w-8 text-success" />
                         </div>
                         {lastSale && (
                             <>
-                                <p className="text-sm text-gray-500">Comprobante</p>
+                                <p className="text-sm text-muted-foreground">Comprobante</p>
                                 <p className="text-lg font-bold">{lastSale.sale_number}</p>
-                                <p className="text-2xl font-bold text-green-600 mt-2">{formatCurrency(lastSale.total)}</p>
+                                <p className="text-2xl font-bold text-success mt-2">{formatCurrency(lastSale.total)}</p>
                             </>
                         )}
                     </div>

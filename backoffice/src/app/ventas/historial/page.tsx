@@ -89,7 +89,10 @@ export default function HistorialVentasPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6">Historial de Ventas</h1>
+            <div className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight">Historial de Ventas</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Consulta y detalle de ventas registradas</p>
+            </div>
 
             <div className="flex flex-wrap gap-3 mb-4">
                 <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
@@ -128,7 +131,7 @@ export default function HistorialVentasPage() {
                             <Eye className="h-4 w-4" />
                         </Button>
                         {row.status === 'completed' && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => cancelSale(row.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => cancelSale(row.id)}>
                                 <XCircle className="h-4 w-4" />
                             </Button>
                         )}
@@ -146,10 +149,10 @@ export default function HistorialVentasPage() {
                     {selectedSale && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div><span className="text-gray-500">Fecha:</span> {selectedSale.createdAt ? formatDateTime(selectedSale.createdAt) : '-'}</div>
-                                <div><span className="text-gray-500">Cliente:</span> {selectedSale.customer?.name || 'Consumidor final'}</div>
-                                <div><span className="text-gray-500">Metodo:</span> {methodMap[selectedSale.payment_method] || selectedSale.payment_method}</div>
-                                <div><span className="text-gray-500">Estado:</span> {statusMap[selectedSale.status]?.label || selectedSale.status}</div>
+                                <div><span className="text-muted-foreground">Fecha:</span> {selectedSale.createdAt ? formatDateTime(selectedSale.createdAt) : '-'}</div>
+                                <div><span className="text-muted-foreground">Cliente:</span> {selectedSale.customer?.name || 'Consumidor final'}</div>
+                                <div><span className="text-muted-foreground">Metodo:</span> {methodMap[selectedSale.payment_method] || selectedSale.payment_method}</div>
+                                <div><span className="text-muted-foreground">Estado:</span> {statusMap[selectedSale.status]?.label || selectedSale.status}</div>
                             </div>
                             <Separator />
                             <div className="space-y-2">
@@ -163,9 +166,9 @@ export default function HistorialVentasPage() {
                             </div>
                             <Separator />
                             <div className="space-y-1 text-sm">
-                                <div className="flex justify-between"><span className="text-gray-500">Subtotal</span><span>{formatCurrency(selectedSale.subtotal)}</span></div>
-                                {selectedSale.discount_amount > 0 && <div className="flex justify-between text-green-600"><span>Descuento</span><span>-{formatCurrency(selectedSale.discount_amount)}</span></div>}
-                                <div className="flex justify-between"><span className="text-gray-500">Impuestos</span><span>{formatCurrency(selectedSale.tax_amount)}</span></div>
+                                <div className="flex justify-between"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(selectedSale.subtotal)}</span></div>
+                                {selectedSale.discount_amount > 0 && <div className="flex justify-between text-success"><span>Descuento</span><span>-{formatCurrency(selectedSale.discount_amount)}</span></div>}
+                                <div className="flex justify-between"><span className="text-muted-foreground">Impuestos</span><span>{formatCurrency(selectedSale.tax_amount)}</span></div>
                                 <div className="flex justify-between font-bold text-lg"><span>Total</span><span>{formatCurrency(selectedSale.total)}</span></div>
                             </div>
                         </div>

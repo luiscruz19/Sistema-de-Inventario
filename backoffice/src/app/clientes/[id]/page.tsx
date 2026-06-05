@@ -11,8 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { formatCurrency } from '@/lib/utils'
-import { ArrowLeft, Plus, TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
+import { ArrowLeft, Plus, TrendingUp, TrendingDown, DollarSign, UserX, Receipt } from 'lucide-react'
 import type { Customer } from '@/types'
 
 interface Transaction {
@@ -75,8 +77,25 @@ export default function CustomerDetailPage() {
         setSaving(false)
     }
 
-    if (loading) return <div className="flex items-center justify-center py-20 text-muted-foreground">Cargando...</div>
-    if (!customer) return <div className="text-center py-12 text-muted-foreground">Cliente no encontrado</div>
+    if (loading) return (
+        <div className="space-y-6 max-w-4xl">
+            <div className="flex items-center gap-4">
+                <Skeleton className="h-10 w-10 rounded-md" />
+                <div className="space-y-1.5"><Skeleton className="h-6 w-48" /><Skeleton className="h-4 w-32" /></div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {[...Array(3)].map((_, i) => (
+                    <Card key={i}><CardContent className="pt-4 space-y-2"><Skeleton className="h-4 w-24" /><Skeleton className="h-8 w-32" /></CardContent></Card>
+                ))}
+            </div>
+            <Card><CardContent className="p-6 space-y-3">{[...Array(4)].map((_, i) => <Skeleton key={i} className="h-12 w-full" />)}</CardContent></Card>
+        </div>
+    )
+    if (!customer) return (
+        <div className="max-w-4xl">
+            <Card><CardContent className="p-0"><EmptyState icon={UserX} title="Cliente no encontrado" description="El cliente que buscas no existe o fue eliminado." action={<Button variant="outline" onClick={() => router.back()}><ArrowLeft className="h-4 w-4 mr-2" /> Volver</Button>} /></CardContent></Card>
+        </div>
+    )
 
     return (
         <div className="space-y-6 max-w-4xl">
@@ -85,7 +104,7 @@ export default function CustomerDetailPage() {
                     <ArrowLeft className="h-5 w-5" />
                 </Button>
                 <div>
-                    <h1 className="text-xl font-bold">{(customer as any).name}</h1>
+                    <h1 className="text-xl font-semibold tracking-tight">{(customer as any).name}</h1>
                     <p className="text-sm text-muted-foreground">Cuenta corriente</p>
                 </div>
             </div>
@@ -95,7 +114,7 @@ export default function CustomerDetailPage() {
                 <Card>
                     <CardContent className="pt-4">
                         <div className="text-sm text-muted-foreground">Saldo actual</div>
-                        <div className={`text-2xl font-bold ${Number((customer as any).balance) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                        <div className={`text-2xl font-bold ${Number((customer as any).balance) >= 0 ? 'text-success' : 'text-destructive'}`}>
                             {formatCurrency(Number((customer as any).balance))}
                         </div>
                     </CardContent>
@@ -103,13 +122,13 @@ export default function CustomerDetailPage() {
                 <Card>
                     <CardContent className="pt-4">
                         <div className="text-sm text-muted-foreground">Límite de crédito</div>
-                        <div className="text-2xl font-bold">{formatCurrency(Number((customer as any).credit_limit))}</div>
+                        <div className="text-2xl font-semibold tracking-tight">{formatCurrency(Number((customer as any).credit_limit))}</div>
                     </CardContent>
                 </Card>
                 <Card>
                     <CardContent className="pt-4">
                         <div className="text-sm text-muted-foreground">Descuento</div>
-                        <div className="text-2xl font-bold">{(customer as any).discount_percentage}%</div>
+                        <div className="text-2xl font-semibold tracking-tight">{(customer as any).discount_percentage}%</div>
                     </CardContent>
                 </Card>
             </div>
@@ -176,16 +195,16 @@ export default function CustomerDetailPage() {
                     <Separator />
 
                     {transactions.length === 0 ? (
-                        <p className="text-sm text-muted-foreground text-center py-6">Sin movimientos registrados</p>
+                        <EmptyState icon={Receipt} title="Sin movimientos" description="Todavia no hay movimientos en la cuenta corriente de este cliente." className="py-6" />
                     ) : (
                         <div className="space-y-2">
                             {transactions.map(tx => (
                                 <div key={tx.id} className="flex items-center justify-between py-2 border-b last:border-0">
                                     <div className="flex items-center gap-3">
-                                        <div className={`p-1.5 rounded-full ${tx.type === 'credit' ? 'bg-green-100' : 'bg-red-100'}`}>
+                                        <div className={`p-1.5 rounded-full ${tx.type === 'credit' ? 'bg-success/10' : 'bg-destructive/10'}`}>
                                             {tx.type === 'credit'
-                                                ? <TrendingUp className="h-4 w-4 text-green-600" />
-                                                : <TrendingDown className="h-4 w-4 text-red-600" />
+                                                ? <TrendingUp className="h-4 w-4 text-success" />
+                                                : <TrendingDown className="h-4 w-4 text-destructive" />
                                             }
                                         </div>
                                         <div>
@@ -197,7 +216,7 @@ export default function CustomerDetailPage() {
                                         </div>
                                     </div>
                                     <div className="text-right">
-                                        <p className={`text-sm font-semibold ${tx.type === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
+                                        <p className={`text-sm font-semibold ${tx.type === 'credit' ? 'text-success' : 'text-destructive'}`}>
                                             {tx.type === 'credit' ? '+' : '-'}{formatCurrency(Number(tx.amount))}
                                         </p>
                                         <p className="text-xs text-muted-foreground">

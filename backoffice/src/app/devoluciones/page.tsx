@@ -160,16 +160,16 @@ export default function DevolucionesPage() {
     ]
 
     return (
-        <div className="p-6 space-y-6">
-            <div className="flex items-center justify-between">
+        <div>
+            <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-xl font-bold flex items-center gap-2"><RotateCcw className="h-5 w-5" /> Notas de crédito</h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Devoluciones y ajustes de ventas</p>
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2"><RotateCcw className="h-6 w-6" /> Notas de crédito</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Devoluciones y ajustes de ventas</p>
                 </div>
                 <Button onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nueva devolución</Button>
             </div>
 
-            <DataTable data={notes} columns={columns} actions={actions} loading={loading} pagination={pagination} onPageChange={fetchNotes} />
+            <DataTable data={notes} columns={columns} actions={actions} isLoading={loading} emptyMessage="No hay notas de crédito" pagination={pagination} onPageChange={fetchNotes} />
 
             {/* Modal crear nota de crédito */}
             <Dialog open={showCreate} onOpenChange={setShowCreate}>
@@ -210,7 +210,7 @@ export default function DevolucionesPage() {
                                         <Input className="col-span-2" type="number" min={0} placeholder="P. unitario" value={item.unit_price} onChange={e => updateItem(i, 'unit_price', e.target.value)} />
                                         <Input className="col-span-2" type="number" min={0} max={100} placeholder="IVA%" value={item.tax_rate} onChange={e => updateItem(i, 'tax_rate', e.target.value)} />
                                         <span className="col-span-1 text-sm font-medium text-right">{formatCurrency(item.subtotal)}</span>
-                                        {items.length > 1 && <button onClick={() => removeItem(i)} className="col-span-1 text-gray-300 hover:text-red-500"><XCircle className="h-4 w-4" /></button>}
+                                        {items.length > 1 && <button onClick={() => removeItem(i)} className="col-span-1 text-muted-foreground/60 hover:text-destructive"><XCircle className="h-4 w-4" /></button>}
                                     </div>
                                 ))}
                             </div>
@@ -262,11 +262,11 @@ export default function DevolucionesPage() {
                                         </div>
                                     </div>
                                 )}
-                                {selected.notes && <p className="text-xs text-gray-400">{selected.notes}</p>}
+                                {selected.notes && <p className="text-xs text-muted-foreground">{selected.notes}</p>}
                             </div>
                             {selected.status === 'pending' && (
                                 <DialogFooter className="gap-2">
-                                    <Button variant="outline" size="sm" onClick={() => cancelNote(selected.id)} className="text-red-500 hover:text-red-700">
+                                    <Button variant="outline" size="sm" onClick={() => cancelNote(selected.id)} className="text-destructive hover:text-destructive/80">
                                         <XCircle className="h-4 w-4 mr-1" /> Cancelar NC
                                     </Button>
                                     <Button size="sm" onClick={() => applyNote(selected.id)}>

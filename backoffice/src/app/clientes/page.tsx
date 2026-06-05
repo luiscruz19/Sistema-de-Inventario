@@ -88,11 +88,11 @@ export default function ClientesPage() {
         { key: 'name', label: 'Nombre', sortable: true, render: (v) => <span className="font-medium">{v as string}</span> },
         { key: 'tax_id', label: 'CUIT', render: (v) => <span className="font-mono text-xs">{(v as string) || '-'}</span> },
         { key: 'type', label: 'Tipo', render: (v) => <Badge variant={v === 'wholesale' ? 'default' : 'secondary'}>{v === 'wholesale' ? 'Mayorista' : 'Minorista'}</Badge> },
-        { key: 'email', label: 'Email', render: (v) => v ? <span className="text-primary-600 text-sm">{v as string}</span> : '-' },
+        { key: 'email', label: 'Email', render: (v) => v ? <span className="text-primary text-sm">{v as string}</span> : '-' },
         { key: 'phone', label: 'Telefono', render: (v) => (v as string) || '-' },
         { key: 'balance', label: 'Saldo', sortable: true, render: (v) => {
             const n = v as number
-            return <span className={n > 0 ? 'text-red-600 font-semibold' : n < 0 ? 'text-green-600 font-semibold' : ''}>{formatCurrency(n)}</span>
+            return <span className={n > 0 ? 'text-destructive font-semibold' : n < 0 ? 'text-success font-semibold' : ''}>{formatCurrency(n)}</span>
         }},
         { key: 'active', label: 'Estado', render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activo' : 'Inactivo'}</Badge> },
     ]
@@ -100,7 +100,10 @@ export default function ClientesPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Clientes</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Cuentas, saldos y cuenta corriente</p>
+                </div>
                 <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nuevo cliente</Button>
             </div>
 
@@ -117,7 +120,7 @@ export default function ClientesPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewDetail(row)}><Eye className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" title="Cuenta corriente" onClick={() => router.push(`/clientes/${row.id}`)}><History className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                 )}
             />
@@ -158,18 +161,18 @@ export default function ClientesPage() {
                     {selectedCustomer && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-2 text-sm">
-                                <div><span className="text-gray-500">CUIT:</span> {selectedCustomer.tax_id || '-'}</div>
-                                <div><span className="text-gray-500">Tipo:</span> {selectedCustomer.type === 'wholesale' ? 'Mayorista' : 'Minorista'}</div>
-                                <div><span className="text-gray-500">Email:</span> {selectedCustomer.email || '-'}</div>
-                                <div><span className="text-gray-500">Telefono:</span> {selectedCustomer.phone || '-'}</div>
-                                <div><span className="text-gray-500">Saldo:</span> <span className={selectedCustomer.balance > 0 ? 'text-red-600 font-semibold' : ''}>{formatCurrency(selectedCustomer.balance)}</span></div>
-                                <div><span className="text-gray-500">Limite credito:</span> {formatCurrency(selectedCustomer.credit_limit)}</div>
+                                <div><span className="text-muted-foreground">CUIT:</span> {selectedCustomer.tax_id || '-'}</div>
+                                <div><span className="text-muted-foreground">Tipo:</span> {selectedCustomer.type === 'wholesale' ? 'Mayorista' : 'Minorista'}</div>
+                                <div><span className="text-muted-foreground">Email:</span> {selectedCustomer.email || '-'}</div>
+                                <div><span className="text-muted-foreground">Telefono:</span> {selectedCustomer.phone || '-'}</div>
+                                <div><span className="text-muted-foreground">Saldo:</span> <span className={selectedCustomer.balance > 0 ? 'text-destructive font-semibold' : ''}>{formatCurrency(selectedCustomer.balance)}</span></div>
+                                <div><span className="text-muted-foreground">Limite credito:</span> {formatCurrency(selectedCustomer.credit_limit)}</div>
                             </div>
                             <Separator />
                             <div>
                                 <p className="font-medium text-sm mb-2">Ultimas compras</p>
                                 {customerSales.length === 0 ? (
-                                    <p className="text-xs text-gray-400">Sin compras registradas</p>
+                                    <p className="text-xs text-muted-foreground">Sin compras registradas</p>
                                 ) : (
                                     <div className="space-y-2">
                                         {customerSales.map(sale => (

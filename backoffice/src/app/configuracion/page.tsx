@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Settings, Save, Loader2 } from 'lucide-react'
 import type { BusinessConfig } from '@/types'
 
@@ -55,13 +56,38 @@ export default function ConfiguracionPage() {
         }
     }
 
-    if (loading) return <div className="text-center py-12 text-gray-400">Cargando configuracion...</div>
+    if (loading) return (
+        <div>
+            <div className="flex items-center gap-3 mb-6">
+                <Settings className="h-6 w-6 text-muted-foreground" />
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Configuracion</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Datos del negocio y parametros de facturacion</p>
+                </div>
+            </div>
+            <div className="max-w-2xl space-y-6">
+                {[...Array(2)].map((_, i) => (
+                    <Card key={i}>
+                        <CardHeader><Skeleton className="h-5 w-40" /></CardHeader>
+                        <CardContent className="space-y-4">
+                            {[...Array(3)].map((_, j) => (
+                                <div key={j} className="space-y-1.5"><Skeleton className="h-4 w-24" /><Skeleton className="h-9 w-full" /></div>
+                            ))}
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
+        </div>
+    )
 
     return (
         <div>
             <div className="flex items-center gap-3 mb-6">
-                <Settings className="h-6 w-6 text-gray-400" />
-                <h1 className="text-2xl font-bold">Configuracion</h1>
+                <Settings className="h-6 w-6 text-muted-foreground" />
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Configuracion</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Datos del negocio y parametros de facturacion</p>
+                </div>
             </div>
 
             <div className="max-w-2xl space-y-6">

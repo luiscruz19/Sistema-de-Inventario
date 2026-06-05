@@ -141,7 +141,7 @@ export default function NumerosSeriesPage() {
         {
             key: 'batch',
             label: 'Lote',
-            render: (_, row) => <span className="text-sm text-gray-500">{row.batch?.batch_number || '-'}</span>,
+            render: (_, row) => <span className="text-sm text-muted-foreground">{row.batch?.batch_number || '-'}</span>,
         },
         {
             key: 'status',
@@ -159,7 +159,7 @@ export default function NumerosSeriesPage() {
         {
             key: 'sold_at',
             label: 'Fecha venta',
-            render: (v) => v ? <span className="text-sm">{formatDateTime(v as string)}</span> : <span className="text-gray-400 text-sm">-</span>,
+            render: (v) => v ? <span className="text-sm">{formatDateTime(v as string)}</span> : <span className="text-muted-foreground text-sm">-</span>,
         },
     ]
 
@@ -167,10 +167,10 @@ export default function NumerosSeriesPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Hash className="h-6 w-6" /> Numeros de serie
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Trazabilidad por numero de serie individual</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Trazabilidad por numero de serie individual</p>
                 </div>
                 <div className="flex gap-2">
                     <Button variant="outline" onClick={() => setShowBulkModal(true)}>
@@ -265,7 +265,7 @@ export default function NumerosSeriesPage() {
                                 rows={8}
                                 placeholder={"SN-0001\nSN-0002\nSN-0003"}
                             />
-                            <p className="text-xs text-gray-400 mt-1">
+                            <p className="text-xs text-muted-foreground mt-1">
                                 {bulkSerials.split('\n').filter(s => s.trim()).length} series detectadas
                             </p>
                         </div>

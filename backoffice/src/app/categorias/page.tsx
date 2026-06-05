@@ -9,8 +9,9 @@ import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { Plus, Pencil, Trash2, ChevronRight, FolderOpen, Folder } from 'lucide-react'
+import { Plus, Pencil, Trash2, ChevronRight, FolderOpen, Folder, FolderTree } from 'lucide-react'
 import type { Category } from '@/types'
 
 export default function CategoriasPage() {
@@ -70,15 +71,15 @@ export default function CategoriasPage() {
         const children = getChildren(cat.id)
         return (
             <div key={cat.id}>
-                <div className={`flex items-center gap-3 py-3 px-4 hover:bg-gray-50 border-b border-gray-100 ${depth > 0 ? '' : ''}`} style={{ paddingLeft: `${16 + depth * 24}px` }}>
-                    {children.length > 0 ? <FolderOpen className="h-4 w-4 text-primary-500 shrink-0" /> : depth > 0 ? <ChevronRight className="h-4 w-4 text-gray-300 shrink-0" /> : <Folder className="h-4 w-4 text-gray-400 shrink-0" />}
+                <div className={`flex items-center gap-3 py-3 px-4 hover:bg-muted border-b border-border ${depth > 0 ? '' : ''}`} style={{ paddingLeft: `${16 + depth * 24}px` }}>
+                    {children.length > 0 ? <FolderOpen className="h-4 w-4 text-primary shrink-0" /> : depth > 0 ? <ChevronRight className="h-4 w-4 text-muted-foreground/60 shrink-0" /> : <Folder className="h-4 w-4 text-muted-foreground shrink-0" />}
                     <span className="flex-1 text-sm font-medium">{cat.name}</span>
                     <Badge variant={cat.active ? 'success' : 'secondary'} className="text-[10px]">{cat.active ? 'Activa' : 'Inactiva'}</Badge>
-                    <span className="text-xs text-gray-400 w-8 text-center">{cat.sort_order}</span>
+                    <span className="text-xs text-muted-foreground w-8 text-center">{cat.sort_order}</span>
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openCreate(cat.id)} title="Agregar subcategoria"><Plus className="h-3 w-3" /></Button>
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => openEdit(cat)}><Pencil className="h-3 w-3" /></Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => handleDelete(cat.id)}><Trash2 className="h-3 w-3" /></Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive/80" onClick={() => handleDelete(cat.id)}><Trash2 className="h-3 w-3" /></Button>
                     </div>
                 </div>
                 {children.sort((a, b) => a.sort_order - b.sort_order).map(child => renderCategory(child, depth + 1))}
@@ -91,7 +92,10 @@ export default function CategoriasPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Categorias</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Categorias</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Organiza tu catalogo en categorias y subcategorias</p>
+                </div>
                 <Button onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" /> Nueva categoria</Button>
             </div>
 
@@ -109,7 +113,7 @@ export default function CategoriasPage() {
                         ))}
                     </div>
                 ) : rootCategories.length === 0 ? (
-                    <div className="p-8 text-center text-muted-foreground">No hay categorias creadas</div>
+                    <EmptyState icon={FolderTree} title="No hay categorias creadas" description="Organiza tus productos creando tu primera categoria." action={<Button onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" /> Nueva categoria</Button>} />
                 ) : (
                     rootCategories.sort((a, b) => a.sort_order - b.sort_order).map(cat => renderCategory(cat, 0))
                 )}

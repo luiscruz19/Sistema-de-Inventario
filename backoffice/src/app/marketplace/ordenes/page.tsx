@@ -150,10 +150,10 @@ export default function MarketplaceOrdenesPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <ShoppingBag className="h-6 w-6" /> Ordenes de marketplace
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Pedidos recibidos de canales externos</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Pedidos recibidos de canales externos</p>
                 </div>
             </div>
 
@@ -197,7 +197,7 @@ export default function MarketplaceOrdenesPage() {
                             <Eye className="h-4 w-4" />
                         </Button>
                         {!row.internal_sale_id && row.status === 'confirmed' && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-600" title="Generar venta interna" onClick={() => generateInternalSale(row.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" title="Generar venta interna" onClick={() => generateInternalSale(row.id)}>
                                 <PackageCheck className="h-4 w-4" />
                             </Button>
                         )}
@@ -224,13 +224,13 @@ export default function MarketplaceOrdenesPage() {
                     {selectedOrder && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div><span className="text-gray-500">Comprador:</span> {selectedOrder.buyer_name}</div>
+                                <div><span className="text-muted-foreground">Comprador:</span> {selectedOrder.buyer_name}</div>
                                 {selectedOrder.buyer_email && (
-                                    <div><span className="text-gray-500">Email:</span> {selectedOrder.buyer_email}</div>
+                                    <div><span className="text-muted-foreground">Email:</span> {selectedOrder.buyer_email}</div>
                                 )}
-                                <div><span className="text-gray-500">Fecha:</span> {formatDateTime(selectedOrder.createdAt)}</div>
+                                <div><span className="text-muted-foreground">Fecha:</span> {formatDateTime(selectedOrder.createdAt)}</div>
                                 {selectedOrder.internal_sale_id && (
-                                    <div><span className="text-gray-500">Venta interna:</span> #{selectedOrder.internal_sale_id}</div>
+                                    <div><span className="text-muted-foreground">Venta interna:</span> #{selectedOrder.internal_sale_id}</div>
                                 )}
                             </div>
 
@@ -240,7 +240,7 @@ export default function MarketplaceOrdenesPage() {
                                     <div>
                                         <p className="font-medium text-sm mb-2">Items</p>
                                         {selectedOrder.items.map((item) => (
-                                            <div key={item.id} className="flex justify-between text-sm py-1 border-b border-gray-100 last:border-0">
+                                            <div key={item.id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
                                                 <span>{item.title} x{item.quantity}</span>
                                                 <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                                             </div>
@@ -261,7 +261,7 @@ export default function MarketplaceOrdenesPage() {
                                         <Button size="sm" variant="outline" onClick={() => updateStatus(selectedOrder.id, 'confirmed')}>
                                             Confirmar orden
                                         </Button>
-                                        <Button size="sm" variant="outline" className="text-red-500" onClick={() => updateStatus(selectedOrder.id, 'cancelled')}>
+                                        <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateStatus(selectedOrder.id, 'cancelled')}>
                                             Cancelar
                                         </Button>
                                     </div>

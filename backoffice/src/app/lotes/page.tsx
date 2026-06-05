@@ -135,7 +135,7 @@ export default function LotesPage() {
             render: (_, row) => (
                 <span className="text-sm">
                     <span className="font-semibold">{row.current_quantity}</span>
-                    <span className="text-gray-400"> / {row.initial_quantity}</span>
+                    <span className="text-muted-foreground"> / {row.initial_quantity}</span>
                 </span>
             ),
         },
@@ -143,7 +143,7 @@ export default function LotesPage() {
             key: 'expiration_date',
             label: 'Vencimiento',
             render: (v, row) => {
-                if (!v) return <span className="text-gray-400 text-sm">-</span>
+                if (!v) return <span className="text-muted-foreground text-sm">-</span>
                 const status = getBatchStatus(row)
                 const s = statusMap[status]
                 return (
@@ -157,7 +157,7 @@ export default function LotesPage() {
         {
             key: 'supplier',
             label: 'Proveedor',
-            render: (v) => <span className="text-sm text-gray-600">{(v as string) || '-'}</span>,
+            render: (v) => <span className="text-sm text-muted-foreground">{(v as string) || '-'}</span>,
         },
     ]
 
@@ -165,10 +165,10 @@ export default function LotesPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Package2 className="h-6 w-6" /> Lotes / Batches
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Trazabilidad por lote de fabricacion</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Trazabilidad por lote de fabricacion</p>
                 </div>
                 <Button onClick={() => setShowModal(true)}>
                     <Plus className="h-4 w-4 mr-2" /> Nuevo lote

@@ -137,7 +137,10 @@ export default function TransferenciasPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Transferencias entre sucursales</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Transferencias entre sucursales</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Movimientos de stock entre depositos</p>
+                </div>
                 <Button onClick={() => setShowCreateModal(true)}><Plus className="h-4 w-4 mr-2" /> Nueva transferencia</Button>
             </div>
 
@@ -157,10 +160,10 @@ export default function TransferenciasPage() {
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewDetail(row)}><Eye className="h-4 w-4" /></Button>
                         {(row.status === 'pending' || row.status === 'in_transit') && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => openReceive(row)}><Check className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => openReceive(row)}><Check className="h-4 w-4" /></Button>
                         )}
                         {row.status === 'pending' && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => cancelTransfer(row.id)}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => cancelTransfer(row.id)}><Trash2 className="h-4 w-4" /></Button>
                         )}
                     </div>
                 )}
@@ -182,7 +185,7 @@ export default function TransferenciasPage() {
                                     <SelectContent>{branches.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)}</SelectContent>
                                 </Select>
                             </div>
-                            <ArrowRight className="h-5 w-5 text-gray-400 mt-6" />
+                            <ArrowRight className="h-5 w-5 text-muted-foreground mt-6" />
                             <div className="flex-1">
                                 <Label>Destino</Label>
                                 <Select value={createForm.to_branch_id} onValueChange={(v) => setCreateForm(f => ({ ...f, to_branch_id: v }))}>
@@ -198,11 +201,11 @@ export default function TransferenciasPage() {
                                 <Button variant="outline" size="sm" onClick={addItem}><Plus className="h-3 w-3 mr-1" /> Agregar</Button>
                             </div>
                             {createForm.items.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-4">Agrega productos a la transferencia</p>
+                                <p className="text-sm text-muted-foreground text-center py-4">Agrega productos a la transferencia</p>
                             ) : (
                                 <div className="space-y-2">
                                     {createForm.items.map((item, idx) => (
-                                        <div key={idx} className="flex items-end gap-2 p-3 bg-gray-50 rounded-lg">
+                                        <div key={idx} className="flex items-end gap-2 p-3 bg-muted rounded-lg">
                                             <div className="flex-1">
                                                 <Label className="text-xs">Producto</Label>
                                                 <Select value={item.product_id} onValueChange={(v) => setCreateForm(f => ({ ...f, items: f.items.map((it, i) => i === idx ? { ...it, product_id: v } : it) }))}>
@@ -214,7 +217,7 @@ export default function TransferenciasPage() {
                                                 <Label className="text-xs">Cantidad</Label>
                                                 <Input type="number" min={1} value={item.quantity_sent} onChange={(e) => setCreateForm(f => ({ ...f, items: f.items.map((it, i) => i === idx ? { ...it, quantity_sent: e.target.value } : it) }))} className="mt-1 h-8" />
                                             </div>
-                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3" /></Button>
                                         </div>
                                     ))}
                                 </div>
@@ -238,12 +241,12 @@ export default function TransferenciasPage() {
                     {selectedTransfer && (
                         <div className="space-y-3 text-sm">
                             <div className="grid grid-cols-2 gap-2">
-                                <div><span className="text-gray-500">Origen:</span> {selectedTransfer.fromBranch?.name}</div>
-                                <div><span className="text-gray-500">Destino:</span> {selectedTransfer.toBranch?.name}</div>
-                                <div><span className="text-gray-500">Estado:</span> {statusMap[selectedTransfer.status]?.label}</div>
-                                <div><span className="text-gray-500">Fecha:</span> {selectedTransfer.createdAt ? formatDateTime(selectedTransfer.createdAt) : '-'}</div>
+                                <div><span className="text-muted-foreground">Origen:</span> {selectedTransfer.fromBranch?.name}</div>
+                                <div><span className="text-muted-foreground">Destino:</span> {selectedTransfer.toBranch?.name}</div>
+                                <div><span className="text-muted-foreground">Estado:</span> {statusMap[selectedTransfer.status]?.label}</div>
+                                <div><span className="text-muted-foreground">Fecha:</span> {selectedTransfer.createdAt ? formatDateTime(selectedTransfer.createdAt) : '-'}</div>
                             </div>
-                            {selectedTransfer.notes && <p className="text-gray-500">Notas: {selectedTransfer.notes}</p>}
+                            {selectedTransfer.notes && <p className="text-muted-foreground">Notas: {selectedTransfer.notes}</p>}
                             <Separator />
                             <div className="space-y-2">
                                 {selectedTransfer.items?.map(item => (
@@ -271,7 +274,7 @@ export default function TransferenciasPage() {
                             <div key={item.id} className="flex items-center justify-between gap-3">
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">{item.product?.name}</p>
-                                    <p className="text-xs text-gray-400">Enviado: {item.quantity_sent}</p>
+                                    <p className="text-xs text-muted-foreground">Enviado: {item.quantity_sent}</p>
                                 </div>
                                 <div className="w-24">
                                     <Input

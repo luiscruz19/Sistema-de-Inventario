@@ -158,8 +158,8 @@ export default function IntegracionesPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-2">Integraciones</h1>
-            <p className="text-sm text-gray-500 mb-6">
+            <h1 className="text-2xl font-semibold tracking-tight mb-2">Integraciones</h1>
+            <p className="text-sm text-muted-foreground mb-6">
                 Conectá tu negocio con proveedores externos (AFIP/ARCA, MercadoPago, etc.)
             </p>
 
@@ -167,7 +167,7 @@ export default function IntegracionesPage() {
             <Card className="mb-6">
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <FileText className="h-5 w-5 text-primary-600" />
+                        <FileText className="h-5 w-5 text-primary" />
                         Datos fiscales del negocio
                     </CardTitle>
                 </CardHeader>
@@ -210,14 +210,14 @@ export default function IntegracionesPage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-primary-600" />
+                            <FileText className="h-5 w-5 text-primary" />
                             AFIP / ARCA (Facturación electrónica)
                         </CardTitle>
                         <IntegrationStatusBadge integration={arcaIntegration} />
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                         Subí tu certificado y clave privada exportados desde AFIP (archivos .pem). Mientras no estén
                         cargados, las facturas se emiten en modo simulado con CAE fake para que puedas probar todo el flujo.
                     </p>
@@ -281,10 +281,10 @@ export default function IntegracionesPage() {
                     </div>
 
                     {arcaIntegration?.last_tested_at && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                             Última prueba: {new Date(arcaIntegration.last_tested_at).toLocaleString('es-AR')}
                             {arcaIntegration.last_test_status === 'error' && arcaIntegration.last_test_error && (
-                                <span className="ml-2 text-red-500">— {arcaIntegration.last_test_error}</span>
+                                <span className="ml-2 text-destructive">— {arcaIntegration.last_test_error}</span>
                             )}
                         </div>
                     )}
@@ -296,14 +296,14 @@ export default function IntegracionesPage() {
                 <CardHeader>
                     <div className="flex items-center justify-between">
                         <CardTitle className="text-base flex items-center gap-2">
-                            <CreditCard className="h-5 w-5 text-blue-500" />
+                            <CreditCard className="h-5 w-5 text-primary" />
                             MercadoPago
                         </CardTitle>
                         <IntegrationStatusBadge integration={mpIntegration} />
                     </div>
                 </CardHeader>
                 <CardContent className="space-y-4">
-                    <p className="text-sm text-gray-500">
+                    <p className="text-sm text-muted-foreground">
                         Ingresá tus credenciales de MercadoPago para habilitar pagos con tarjeta, transferencia y QR
                         en el punto de venta. Las credenciales se guardan cifradas.
                     </p>
@@ -353,10 +353,10 @@ export default function IntegracionesPage() {
                     </div>
 
                     {mpIntegration?.last_tested_at && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-muted-foreground">
                             Última prueba: {new Date(mpIntegration.last_tested_at).toLocaleString('es-AR')}
                             {mpIntegration.last_test_status === 'error' && mpIntegration.last_test_error && (
-                                <span className="ml-2 text-red-500">— {mpIntegration.last_test_error}</span>
+                                <span className="ml-2 text-destructive">— {mpIntegration.last_test_error}</span>
                             )}
                         </div>
                     )}

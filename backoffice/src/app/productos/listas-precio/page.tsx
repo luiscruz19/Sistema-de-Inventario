@@ -111,7 +111,10 @@ export default function ListasPrecioPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Listas de precio</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Listas de precio</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Precios diferenciados por canal o cliente</p>
+                </div>
                 <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nueva lista</Button>
             </div>
 
@@ -122,7 +125,7 @@ export default function ListasPrecioPage() {
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openItems(row)} title="Gestionar precios"><DollarSign className="h-4 w-4" /></Button>
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                 )}
             />
@@ -168,7 +171,7 @@ export default function ListasPrecioPage() {
                                     <Label className="text-xs">Precio</Label>
                                     <Input type="number" min={0} step={0.01} value={item.price} onChange={(e) => setListItems(prev => prev.map((it, i) => i === idx ? { ...it, price: e.target.value } : it))} className="mt-1 h-8" />
                                 </div>
-                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removePriceItem(idx)}><Trash2 className="h-3 w-3" /></Button>
+                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removePriceItem(idx)}><Trash2 className="h-3 w-3" /></Button>
                             </div>
                         ))}
                         <Button variant="outline" size="sm" onClick={addPriceItem}><Plus className="h-3 w-3 mr-1" /> Agregar producto</Button>

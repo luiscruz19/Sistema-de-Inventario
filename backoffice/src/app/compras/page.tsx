@@ -109,7 +109,10 @@ export default function ComprasPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Ordenes de Compra</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Ordenes de Compra</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Pedidos a proveedores y recepcion de mercaderia</p>
+                </div>
                 <Link href="/inventario/compras/nueva">
                     <Button><Plus className="h-4 w-4 mr-2" /> Nueva orden</Button>
                 </Link>
@@ -127,9 +130,9 @@ export default function ComprasPage() {
                 actions={(row) => (
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewDetail(row)}><Eye className="h-4 w-4" /></Button>
-                        {row.status === 'draft' && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary-600" onClick={() => sendOrder(row.id)}><Send className="h-4 w-4" /></Button>}
-                        {(row.status === 'sent' || row.status === 'partial') && <Button variant="ghost" size="icon" className="h-8 w-8 text-green-600" onClick={() => openReceive(row)}><Check className="h-4 w-4" /></Button>}
-                        {(row.status === 'draft' || row.status === 'sent') && <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => cancelOrder(row.id)}><XCircle className="h-4 w-4" /></Button>}
+                        {row.status === 'draft' && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => sendOrder(row.id)}><Send className="h-4 w-4" /></Button>}
+                        {(row.status === 'sent' || row.status === 'partial') && <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => openReceive(row)}><Check className="h-4 w-4" /></Button>}
+                        {(row.status === 'draft' || row.status === 'sent') && <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => cancelOrder(row.id)}><XCircle className="h-4 w-4" /></Button>}
                     </div>
                 )}
             />
@@ -141,10 +144,10 @@ export default function ComprasPage() {
                     {selectedOrder && (
                         <div className="space-y-3 text-sm">
                             <div className="grid grid-cols-2 gap-2">
-                                <div><span className="text-gray-500">Proveedor:</span> {selectedOrder.supplier?.name}</div>
-                                <div><span className="text-gray-500">Sucursal:</span> {selectedOrder.branch?.name}</div>
-                                <div><span className="text-gray-500">Estado:</span> {statusMap[selectedOrder.status]?.label}</div>
-                                <div><span className="text-gray-500">Fecha:</span> {selectedOrder.createdAt ? formatDateTime(selectedOrder.createdAt) : '-'}</div>
+                                <div><span className="text-muted-foreground">Proveedor:</span> {selectedOrder.supplier?.name}</div>
+                                <div><span className="text-muted-foreground">Sucursal:</span> {selectedOrder.branch?.name}</div>
+                                <div><span className="text-muted-foreground">Estado:</span> {statusMap[selectedOrder.status]?.label}</div>
+                                <div><span className="text-muted-foreground">Fecha:</span> {selectedOrder.createdAt ? formatDateTime(selectedOrder.createdAt) : '-'}</div>
                             </div>
                             <Separator />
                             <div className="space-y-2">
@@ -152,7 +155,7 @@ export default function ComprasPage() {
                                     <div key={item.id} className="flex justify-between">
                                         <div>
                                             <span>{item.product?.name || `#${item.product_id}`}</span>
-                                            <span className="text-gray-400 ml-2">x{item.quantity_ordered} ({item.quantity_received} recibidos)</span>
+                                            <span className="text-muted-foreground ml-2">x{item.quantity_ordered} ({item.quantity_received} recibidos)</span>
                                         </div>
                                         <span className="font-medium">{formatCurrency(item.subtotal)}</span>
                                     </div>
@@ -175,7 +178,7 @@ export default function ComprasPage() {
                             <div key={item.id} className="flex items-center gap-3">
                                 <div className="flex-1">
                                     <p className="text-sm font-medium">{item.product?.name}</p>
-                                    <p className="text-xs text-gray-400">Pedido: {item.quantity_ordered} / Ya recibido: {item.quantity_received}</p>
+                                    <p className="text-xs text-muted-foreground">Pedido: {item.quantity_ordered} / Ya recibido: {item.quantity_received}</p>
                                 </div>
                                 <div className="w-24">
                                     <Input type="number" min={0} value={receiveItems[idx]?.quantity_received || ''} onChange={(e) => setReceiveItems(prev => prev.map((ri, i) => i === idx ? { ...ri, quantity_received: e.target.value } : ri))} className="h-8" />

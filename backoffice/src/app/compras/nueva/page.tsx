@@ -85,7 +85,7 @@ export default function NuevaCompraPage() {
         <div>
             <div className="flex items-center gap-3 mb-6">
                 <Link href="/inventario/compras"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
-                <h1 className="text-2xl font-bold">Nueva Orden de Compra</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">Nueva Orden de Compra</h1>
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -125,13 +125,13 @@ export default function NuevaCompraPage() {
                         </CardHeader>
                         <CardContent>
                             {items.length === 0 ? (
-                                <p className="text-sm text-gray-400 text-center py-6">Agrega productos a la orden de compra</p>
+                                <p className="text-sm text-muted-foreground text-center py-6">Agrega productos a la orden de compra</p>
                             ) : (
                                 <div className="space-y-3">
                                     {items.map((item, idx) => {
                                         const product = products.find(p => String(p.id) === item.product_id)
                                         return (
-                                            <div key={idx} className="grid grid-cols-12 gap-2 items-end p-3 bg-gray-50 rounded-lg">
+                                            <div key={idx} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted rounded-lg">
                                                 <div className="col-span-5">
                                                     <Label className="text-xs">Producto</Label>
                                                     <Select value={item.product_id} onValueChange={(v) => {
@@ -152,11 +152,11 @@ export default function NuevaCompraPage() {
                                                     <Input type="number" min={0} step={0.01} value={item.unit_cost} onChange={(e) => updateItem(idx, 'unit_cost', e.target.value)} className="mt-1 h-8" />
                                                 </div>
                                                 <div className="col-span-2 text-right">
-                                                    <p className="text-xs text-gray-400">Subtotal</p>
+                                                    <p className="text-xs text-muted-foreground">Subtotal</p>
                                                     <p className="font-semibold text-sm">{formatCurrency((parseFloat(item.quantity) || 0) * (parseFloat(item.unit_cost) || 0))}</p>
                                                 </div>
                                                 <div className="col-span-1 flex justify-end">
-                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3" /></Button>
+                                                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeItem(idx)}><Trash2 className="h-3 w-3" /></Button>
                                                 </div>
                                             </div>
                                         )
@@ -171,8 +171,8 @@ export default function NuevaCompraPage() {
                     <Card>
                         <CardHeader><CardTitle className="text-base">Resumen</CardTitle></CardHeader>
                         <CardContent className="space-y-3">
-                            <div className="flex justify-between text-sm"><span className="text-gray-500">Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
-                            <div className="flex justify-between text-sm"><span className="text-gray-500">IVA (21%)</span><span>{formatCurrency(taxAmount)}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">Subtotal</span><span>{formatCurrency(subtotal)}</span></div>
+                            <div className="flex justify-between text-sm"><span className="text-muted-foreground">IVA (21%)</span><span>{formatCurrency(taxAmount)}</span></div>
                             <Separator />
                             <div className="flex justify-between text-lg font-bold"><span>Total</span><span>{formatCurrency(total)}</span></div>
                         </CardContent>

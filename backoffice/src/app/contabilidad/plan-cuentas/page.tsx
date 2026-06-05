@@ -10,6 +10,8 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Plus, Pencil, Trash2, BookOpen, ChevronRight } from 'lucide-react'
 
 type AccountType = 'activo' | 'pasivo' | 'patrimonio' | 'resultado' | 'egreso'
@@ -42,11 +44,11 @@ const emptyForm: AccountForm = {
 }
 
 const typeMap: Record<AccountType, { label: string; color: string }> = {
-    activo: { label: 'Activo', color: 'bg-blue-100 text-blue-700' },
-    pasivo: { label: 'Pasivo', color: 'bg-red-100 text-red-700' },
-    patrimonio: { label: 'Patrimonio', color: 'bg-purple-100 text-purple-700' },
-    resultado: { label: 'Resultado', color: 'bg-green-100 text-green-700' },
-    egreso: { label: 'Egreso', color: 'bg-orange-100 text-orange-700' },
+    activo: { label: 'Activo', color: 'bg-primary/10 text-primary' },
+    pasivo: { label: 'Pasivo', color: 'bg-destructive/10 text-destructive' },
+    patrimonio: { label: 'Patrimonio', color: 'bg-primary/10 text-primary' },
+    resultado: { label: 'Resultado', color: 'bg-success/10 text-success' },
+    egreso: { label: 'Egreso', color: 'bg-warning/10 text-warning' },
 }
 
 function AccountRow({ account, depth, onEdit, onDelete }: { account: Account; depth: number; onEdit: (a: Account) => void; onDelete: (id: number) => void }) {
@@ -56,17 +58,17 @@ function AccountRow({ account, depth, onEdit, onDelete }: { account: Account; de
 
     return (
         <>
-            <tr className="border-b border-gray-100 hover:bg-gray-50">
+            <tr className="border-b border-border hover:bg-muted">
                 <td className="py-2 px-4">
                     <div className="flex items-center gap-2" style={{ paddingLeft: `${depth * 20}px` }}>
                         {hasChildren ? (
-                            <button onClick={() => setExpanded(!expanded)} className="text-gray-400 hover:text-gray-600">
+                            <button onClick={() => setExpanded(!expanded)} className="text-muted-foreground hover:text-muted-foreground">
                                 <ChevronRight className={`h-4 w-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
                             </button>
                         ) : (
                             <span className="w-4" />
                         )}
-                        <span className="font-mono text-sm text-gray-500">{account.code}</span>
+                        <span className="font-mono text-sm text-muted-foreground">{account.code}</span>
                     </div>
                 </td>
                 <td className="py-2 px-4">
@@ -89,7 +91,7 @@ function AccountRow({ account, depth, onEdit, onDelete }: { account: Account; de
                         <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onEdit(account)}>
                             <Pencil className="h-3.5 w-3.5" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-7 w-7 text-red-500 hover:text-red-700" onClick={() => onDelete(account.id)}>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive hover:text-destructive/80" onClick={() => onDelete(account.id)}>
                             <Trash2 className="h-3.5 w-3.5" />
                         </Button>
                     </div>
@@ -185,29 +187,38 @@ export default function PlanCuentasPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <BookOpen className="h-6 w-6" /> Plan de cuentas
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Arbol de cuentas contables</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Arbol de cuentas contables</p>
                 </div>
                 <Button onClick={openCreate}>
                     <Plus className="h-4 w-4 mr-2" /> Nueva cuenta
                 </Button>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+            <div className="bg-card rounded-xl border border-border shadow-sm">
                 {loading ? (
-                    <div className="p-8 text-center text-gray-400">Cargando...</div>
+                    <div className="divide-y divide-border">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 px-4 py-3">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-4 flex-1 max-w-[200px]" />
+                                <Skeleton className="h-4 w-16" />
+                                <Skeleton className="h-4 w-12" />
+                            </div>
+                        ))}
+                    </div>
                 ) : accounts.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400">No hay cuentas registradas</div>
+                    <EmptyState icon={BookOpen} title="No hay cuentas registradas" description="Crea tu plan de cuentas para empezar a registrar asientos." action={<Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nueva cuenta</Button>} />
                 ) : (
                     <table className="w-full">
                         <thead>
-                            <tr className="border-b border-gray-200 bg-gray-50">
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Codigo</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Nombre</th>
-                                <th className="text-left py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Tipo</th>
-                                <th className="text-center py-3 px-4 text-xs font-semibold text-gray-500 uppercase tracking-wide">Imputable</th>
+                            <tr className="border-b border-border bg-muted">
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Codigo</th>
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Nombre</th>
+                                <th className="text-left py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Tipo</th>
+                                <th className="text-center py-3 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wide">Imputable</th>
                                 <th className="py-3 px-4" />
                             </tr>
                         </thead>

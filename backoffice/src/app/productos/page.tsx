@@ -130,24 +130,27 @@ export default function ProductosPage() {
     const columns: Column<Product>[] = [
         { key: 'name', label: 'Producto', sortable: true, render: (_, row) => (
             <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-gray-100 rounded-lg flex items-center justify-center"><Package className="h-4 w-4 text-gray-400" /></div>
+                <div className="w-9 h-9 bg-muted rounded-lg flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground" /></div>
                 <div>
                     <p className="font-medium">{row.name}</p>
-                    {row.variants && row.variants.length > 0 && <p className="text-xs text-gray-400">{row.variants.length} variantes</p>}
+                    {row.variants && row.variants.length > 0 && <p className="text-xs text-muted-foreground">{row.variants.length} variantes</p>}
                 </div>
             </div>
         )},
-        { key: 'sku', label: 'SKU', render: (v) => <span className="text-gray-500 font-mono text-xs">{(v as string) || '-'}</span> },
+        { key: 'sku', label: 'SKU', render: (v) => <span className="text-muted-foreground font-mono text-xs">{(v as string) || '-'}</span> },
         { key: 'category', label: 'Categoria', render: (_, row) => row.category?.name || '-' },
         { key: 'sale_price', label: 'Precio', sortable: true, render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span> },
-        { key: 'cost_price', label: 'Costo', sortable: true, render: (v) => <span className="text-gray-500">{formatCurrency(v as number)}</span> },
+        { key: 'cost_price', label: 'Costo', sortable: true, render: (v) => <span className="text-muted-foreground">{formatCurrency(v as number)}</span> },
         { key: 'active', label: 'Estado', render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activo' : 'Inactivo'}</Badge> },
     ]
 
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Productos</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Productos</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Catalogo, precios y variantes</p>
+                </div>
                 <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nuevo producto</Button>
             </div>
 
@@ -170,7 +173,7 @@ export default function ProductosPage() {
                 actions={(row) => (
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                 )}
             />
@@ -238,18 +241,18 @@ export default function ProductosPage() {
                                 <Button variant="outline" size="sm" onClick={addVariant}><Plus className="h-3 w-3 mr-1" /> Agregar</Button>
                             </div>
                             {form.variants.length === 0 ? (
-                                <p className="text-sm text-gray-400">Sin variantes (producto simple)</p>
+                                <p className="text-sm text-muted-foreground">Sin variantes (producto simple)</p>
                             ) : (
                                 <div className="space-y-3">
                                     {form.variants.map((v, idx) => (
-                                        <div key={idx} className="grid grid-cols-6 gap-2 items-end p-3 bg-gray-50 rounded-lg">
+                                        <div key={idx} className="grid grid-cols-6 gap-2 items-end p-3 bg-muted rounded-lg">
                                             <div className="col-span-2"><Label className="text-xs">Nombre</Label><Input value={v.name} onChange={(e) => updateVariant(idx, 'name', e.target.value)} className="mt-1 h-8 text-sm" /></div>
                                             <div><Label className="text-xs">SKU</Label><Input value={v.sku} onChange={(e) => updateVariant(idx, 'sku', e.target.value)} className="mt-1 h-8 text-sm" /></div>
                                             <div><Label className="text-xs">Costo</Label><Input type="number" value={v.cost_price} onChange={(e) => updateVariant(idx, 'cost_price', e.target.value)} className="mt-1 h-8 text-sm" /></div>
                                             <div><Label className="text-xs">Precio</Label><Input type="number" value={v.sale_price} onChange={(e) => updateVariant(idx, 'sale_price', e.target.value)} className="mt-1 h-8 text-sm" /></div>
                                             <div className="flex items-center gap-2">
                                                 <Checkbox checked={v.active} onCheckedChange={(c) => updateVariant(idx, 'active', !!c)} />
-                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500" onClick={() => removeVariant(idx)}><Trash2 className="h-3 w-3" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => removeVariant(idx)}><Trash2 className="h-3 w-3" /></Button>
                                             </div>
                                         </div>
                                     ))}

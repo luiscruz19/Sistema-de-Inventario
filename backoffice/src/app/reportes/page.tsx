@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Separator } from '@/components/ui/separator'
+import { EmptyState } from '@/components/common/EmptyState'
 import { formatCurrency } from '@/lib/utils'
 import { BarChart3, TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart } from 'lucide-react'
 import type { Branch } from '@/types'
@@ -57,15 +58,18 @@ export default function ReportesPage() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6">Reportes</h1>
+            <div className="mb-6">
+                <h1 className="text-2xl font-semibold tracking-tight">Reportes</h1>
+                <p className="text-sm text-muted-foreground mt-0.5">Ventas, productos y margenes por periodo</p>
+            </div>
 
             <div className="flex flex-wrap items-end gap-3 mb-6">
                 <div>
-                    <label className="text-xs text-gray-500">Desde</label>
+                    <label className="text-xs text-muted-foreground">Desde</label>
                     <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
                 </div>
                 <div>
-                    <label className="text-xs text-gray-500">Hasta</label>
+                    <label className="text-xs text-muted-foreground">Hasta</label>
                     <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
                 </div>
                 <Select value={branchId || '__all__'} onValueChange={(v) => setBranchId(v === '__all__' ? '' : v)}>
@@ -84,20 +88,20 @@ export default function ReportesPage() {
             {salesReport && (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                     <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-primary-50 flex items-center justify-center"><ShoppingCart className="h-5 w-5 text-primary-600" /></div>
-                        <div><p className="text-xs text-gray-500">Total ventas</p><p className="text-xl font-bold">{salesReport.total_sales}</p></div>
+                        <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center"><ShoppingCart className="h-5 w-5 text-primary" /></div>
+                        <div><p className="text-xs text-muted-foreground">Total ventas</p><p className="text-xl font-semibold tracking-tight">{salesReport.total_sales}</p></div>
                     </CardContent></Card>
                     <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-green-50 flex items-center justify-center"><DollarSign className="h-5 w-5 text-green-600" /></div>
-                        <div><p className="text-xs text-gray-500">Ingresos</p><p className="text-xl font-bold text-green-600">{formatCurrency(salesReport.total_revenue)}</p></div>
+                        <div className="w-11 h-11 rounded-lg bg-success/10 flex items-center justify-center"><DollarSign className="h-5 w-5 text-success" /></div>
+                        <div><p className="text-xs text-muted-foreground">Ingresos</p><p className="text-xl font-bold text-success">{formatCurrency(salesReport.total_revenue)}</p></div>
                     </CardContent></Card>
                     <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-blue-50 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-blue-600" /></div>
-                        <div><p className="text-xs text-gray-500">Ticket promedio</p><p className="text-xl font-bold">{formatCurrency(salesReport.avg_ticket)}</p></div>
+                        <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary" /></div>
+                        <div><p className="text-xs text-muted-foreground">Ticket promedio</p><p className="text-xl font-semibold tracking-tight">{formatCurrency(salesReport.avg_ticket)}</p></div>
                     </CardContent></Card>
                     <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-purple-50 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-purple-600" /></div>
-                        <div><p className="text-xs text-gray-500">Margen</p><p className="text-xl font-bold text-purple-600">{formatCurrency(salesReport.margin)}</p></div>
+                        <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary" /></div>
+                        <div><p className="text-xs text-muted-foreground">Margen</p><p className="text-xl font-bold text-primary">{formatCurrency(salesReport.margin)}</p></div>
                     </CardContent></Card>
                 </div>
             )}
@@ -120,13 +124,13 @@ export default function ReportesPage() {
                                             <div key={m.method} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-sm font-medium">{methodNames[m.method] || m.method}</span>
-                                                    <span className="text-xs text-gray-400">({m.count} ventas)</span>
+                                                    <span className="text-xs text-muted-foreground">({m.count} ventas)</span>
                                                 </div>
                                                 <span className="font-semibold">{formatCurrency(m.amount)}</span>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                         <Card>
@@ -138,13 +142,13 @@ export default function ReportesPage() {
                                             <div key={b.branch} className="flex items-center justify-between">
                                                 <div className="flex items-center gap-3">
                                                     <span className="text-sm font-medium">{b.branch}</span>
-                                                    <span className="text-xs text-gray-400">({b.count} ventas)</span>
+                                                    <span className="text-xs text-muted-foreground">({b.count} ventas)</span>
                                                 </div>
                                                 <span className="font-semibold">{formatCurrency(b.amount)}</span>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                     </div>
@@ -153,46 +157,46 @@ export default function ReportesPage() {
                 <TabsContent value="productos" className="mt-4">
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4 text-green-600" />Mas vendidos</CardTitle></CardHeader>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" />Mas vendidos</CardTitle></CardHeader>
                             <CardContent>
                                 {productsReport?.top_selling && productsReport.top_selling.length > 0 ? (
                                     <div className="space-y-3">
                                         {productsReport.top_selling.map((p, i) => (
                                             <div key={p.name} className="flex items-center gap-3">
-                                                <span className="w-6 h-6 rounded-full bg-green-50 text-green-600 text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                                                <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{p.name}</p><p className="text-xs text-gray-400">{p.quantity} uds</p></div>
+                                                <span className="w-6 h-6 rounded-full bg-success/10 text-success text-xs font-bold flex items-center justify-center">{i + 1}</span>
+                                                <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{p.name}</p><p className="text-xs text-muted-foreground">{p.quantity} uds</p></div>
                                                 <span className="text-sm font-semibold">{formatCurrency(p.revenue)}</span>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingDown className="h-4 w-4 text-red-600" />Menos vendidos</CardTitle></CardHeader>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingDown className="h-4 w-4 text-destructive" />Menos vendidos</CardTitle></CardHeader>
                             <CardContent>
                                 {productsReport?.least_selling && productsReport.least_selling.length > 0 ? (
                                     <div className="space-y-3">
                                         {productsReport.least_selling.map((p) => (
                                             <div key={p.name} className="flex items-center justify-between">
-                                                <div className="min-w-0"><p className="text-sm font-medium truncate">{p.name}</p><p className="text-xs text-gray-400">{p.quantity} uds</p></div>
+                                                <div className="min-w-0"><p className="text-sm font-medium truncate">{p.name}</p><p className="text-xs text-muted-foreground">{p.quantity} uds</p></div>
                                                 <span className="text-sm">{formatCurrency(p.revenue)}</span>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4 text-gray-400" />Sin movimiento</CardTitle></CardHeader>
+                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4 text-muted-foreground" />Sin movimiento</CardTitle></CardHeader>
                             <CardContent>
                                 {productsReport?.no_movement && productsReport.no_movement.length > 0 ? (
                                     <div className="space-y-2">
                                         {productsReport.no_movement.map((p) => (
-                                            <div key={p.name} className="text-sm"><span className="font-medium">{p.name}</span>{p.sku && <span className="text-xs text-gray-400 ml-2">{p.sku}</span>}</div>
+                                            <div key={p.name} className="text-sm"><span className="font-medium">{p.name}</span>{p.sku && <span className="text-xs text-muted-foreground ml-2">{p.sku}</span>}</div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                     </div>
@@ -209,13 +213,13 @@ export default function ReportesPage() {
                                             <div key={p.name} className="flex items-center justify-between">
                                                 <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{p.name}</p></div>
                                                 <div className="text-right text-sm">
-                                                    <span className="text-green-600 font-semibold">{formatCurrency(p.margin)}</span>
-                                                    <span className="text-gray-400 ml-2">({p.margin_pct?.toFixed(1)}%)</span>
+                                                    <span className="text-success font-semibold">{formatCurrency(p.margin)}</span>
+                                                    <span className="text-muted-foreground ml-2">({p.margin_pct?.toFixed(1)}%)</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                         <Card>
@@ -227,16 +231,16 @@ export default function ReportesPage() {
                                             <div key={c.name}>
                                                 <div className="flex items-center justify-between mb-1">
                                                     <span className="text-sm font-medium">{c.name}</span>
-                                                    <span className="text-sm font-semibold text-green-600">{formatCurrency(c.margin)}</span>
+                                                    <span className="text-sm font-semibold text-success">{formatCurrency(c.margin)}</span>
                                                 </div>
-                                                <div className="flex gap-4 text-xs text-gray-400">
+                                                <div className="flex gap-4 text-xs text-muted-foreground">
                                                     <span>Costo: {formatCurrency(c.cost)}</span>
                                                     <span>Ingresos: {formatCurrency(c.revenue)}</span>
                                                 </div>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <p className="text-sm text-gray-400 text-center py-4">Sin datos</p>}
+                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
                             </CardContent>
                         </Card>
                     </div>

@@ -216,10 +216,10 @@ export default function IIBBPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Percent className="h-6 w-6" /> IIBB / Retenciones
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Configuracion y registro de retenciones y percepciones</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Configuracion y registro de retenciones y percepciones</p>
                 </div>
                 <Button onClick={() => {
                     if (activeTab === 'configuracion') {
@@ -236,15 +236,15 @@ export default function IIBBPage() {
             </div>
 
             {/* Tabs */}
-            <div className="flex gap-1 mb-6 border-b border-gray-200">
+            <div className="flex gap-1 mb-6 border-b border-border">
                 {(['configuracion', 'historial'] as const).map((tab) => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors -mb-px ${
                             activeTab === tab
-                                ? 'border-primary-600 text-primary-600'
-                                : 'border-transparent text-gray-500 hover:text-gray-700'
+                                ? 'border-primary text-primary'
+                                : 'border-transparent text-muted-foreground hover:text-foreground'
                         }`}
                     >
                         {tab === 'configuracion' ? 'Configuracion de alicuotas' : 'Historial de retenciones'}
@@ -263,7 +263,7 @@ export default function IIBBPage() {
                             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEditSetting(row)}>
                                 <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDeleteSetting(row.id)}>
+                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDeleteSetting(row.id)}>
                                 <Trash2 className="h-4 w-4" />
                             </Button>
                         </div>
@@ -273,7 +273,7 @@ export default function IIBBPage() {
                 <>
                     <div className="flex gap-3 mb-4">
                         <div>
-                            <Label className="text-xs text-gray-500 mb-1 block">Periodo</Label>
+                            <Label className="text-xs text-muted-foreground mb-1 block">Periodo</Label>
                             <Input
                                 type="month"
                                 value={period}

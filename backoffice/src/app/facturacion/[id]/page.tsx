@@ -8,9 +8,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { toast } from '@/hooks/use-toast'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { ArrowLeft, Download, RefreshCw, FileMinus, Ban } from 'lucide-react'
+import { ArrowLeft, Download, RefreshCw, FileMinus, Ban, FileX } from 'lucide-react'
 import type { Invoice } from '@/types'
 
 export default function InvoiceDetailPage() {
@@ -68,17 +70,24 @@ export default function InvoiceDetailPage() {
         }
     }
 
-    if (loading) return <div className="p-6">Cargando factura...</div>
-    if (!invoice) return <div className="p-6">Factura no encontrada</div>
+    if (loading) return (
+        <div className="space-y-6">
+            <div className="space-y-2"><Skeleton className="h-4 w-32" /><Skeleton className="h-8 w-72" /><Skeleton className="h-5 w-24" /></div>
+            <Card><CardContent className="p-6 space-y-3">{[...Array(5)].map((_, i) => <Skeleton key={i} className="h-5 w-full" />)}</CardContent></Card>
+        </div>
+    )
+    if (!invoice) return (
+        <Card><CardContent className="p-0"><EmptyState icon={FileX} title="Factura no encontrada" description="El comprobante que buscas no existe o fue eliminado." action={<Link href="/inventario/facturacion"><Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" /> Volver al listado</Button></Link>} /></CardContent></Card>
+    )
 
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <Link href="/inventario/facturacion" className="text-sm text-gray-500 hover:underline inline-flex items-center gap-1">
+                    <Link href="/inventario/facturacion" className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1">
                         <ArrowLeft className="h-4 w-4" /> Volver al listado
                     </Link>
-                    <h1 className="text-2xl font-bold mt-1">
+                    <h1 className="text-2xl font-semibold tracking-tight mt-1">
                         Comprobante {invoice.doc_type} {invoice.full_number || `${invoice.pto_vta}-${invoice.number}`}
                     </h1>
                     <div className="flex items-center gap-2 mt-1">
@@ -116,7 +125,7 @@ export default function InvoiceDetailPage() {
                     <CardContent>
                         <table className="w-full text-sm">
                             <thead>
-                                <tr className="text-left text-xs text-gray-500">
+                                <tr className="text-left text-xs text-muted-foreground">
                                     <th className="py-2">Descripción</th>
                                     <th className="py-2 text-right">Cant.</th>
                                     <th className="py-2 text-right">P. Unit.</th>
@@ -155,8 +164,8 @@ export default function InvoiceDetailPage() {
                         <CardHeader><CardTitle className="text-base">Cliente</CardTitle></CardHeader>
                         <CardContent className="text-sm space-y-1">
                             <div className="font-medium">{invoice.receiver_name || 'Consumidor final'}</div>
-                            <div className="text-gray-500">{invoice.receiver_doc_type} {invoice.receiver_doc_number || '-'}</div>
-                            {invoice.receiver_address && <div className="text-gray-500">{invoice.receiver_address}</div>}
+                            <div className="text-muted-foreground">{invoice.receiver_doc_type} {invoice.receiver_doc_number || '-'}</div>
+                            {invoice.receiver_address && <div className="text-muted-foreground">{invoice.receiver_address}</div>}
                         </CardContent>
                     </Card>
 
@@ -167,11 +176,11 @@ export default function InvoiceDetailPage() {
                             <div>Vto. CAE: {invoice.cae_expiration || '-'}</div>
                             <div>Emisión: {invoice.issued_at ? formatDateTime(invoice.issued_at) : '-'}</div>
                             {invoice.rejection_reason && (
-                                <div className="text-red-600 mt-2">Motivo: {invoice.rejection_reason}</div>
+                                <div className="text-destructive mt-2">Motivo: {invoice.rejection_reason}</div>
                             )}
                             {invoice.qr_url && (
                                 <div className="mt-2 text-xs break-all">
-                                    <a href={invoice.qr_url} target="_blank" rel="noreferrer" className="text-primary-600 hover:underline">
+                                    <a href={invoice.qr_url} target="_blank" rel="noreferrer" className="text-primary hover:underline">
                                         Ver QR AFIP
                                     </a>
                                 </div>

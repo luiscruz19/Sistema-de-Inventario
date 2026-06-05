@@ -155,8 +155,8 @@ export default function CuentasBancariasPage() {
             label: 'CBU / Alias',
             render: (_, row) => (
                 <div className="text-sm">
-                    {row.cbu && <div className="font-mono text-xs text-gray-500">{row.cbu}</div>}
-                    {row.alias && <div className="text-gray-600">{row.alias}</div>}
+                    {row.cbu && <div className="font-mono text-xs text-muted-foreground">{row.cbu}</div>}
+                    {row.alias && <div className="text-muted-foreground">{row.alias}</div>}
                     {!row.cbu && !row.alias && '-'}
                 </div>
             ),
@@ -167,7 +167,7 @@ export default function CuentasBancariasPage() {
             render: (v, row) => {
                 const balance = (v as number) ?? row.initial_balance
                 return (
-                    <span className={`font-semibold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                    <span className={`font-semibold ${balance >= 0 ? 'text-success' : 'text-destructive'}`}>
                         {formatCurrency(balance)}
                     </span>
                 )
@@ -179,10 +179,10 @@ export default function CuentasBancariasPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Building className="h-6 w-6" /> Cuentas bancarias
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Gestion de cuentas bancarias y virtuales</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Gestion de cuentas bancarias y virtuales</p>
                 </div>
                 <Button onClick={openCreate}>
                     <Plus className="h-4 w-4 mr-2" /> Nueva cuenta
@@ -201,7 +201,7 @@ export default function CuentasBancariasPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
                             <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDelete(row.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </div>

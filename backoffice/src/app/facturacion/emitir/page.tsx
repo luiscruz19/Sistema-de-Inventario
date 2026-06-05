@@ -126,7 +126,7 @@ function EmitirPageInner() {
 
     return (
         <div>
-            <h1 className="text-2xl font-bold mb-6">Emitir factura</h1>
+            <h1 className="text-2xl font-semibold tracking-tight mb-6">Emitir factura</h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 space-y-4">
@@ -167,11 +167,11 @@ function EmitirPageInner() {
                                     <Label>ID de la venta</Label>
                                     <Input value={saleId} onChange={(e) => setSaleId(e.target.value)} placeholder="Ej: 1234" />
                                 </div>
-                                {saleLoading && <div className="text-sm text-gray-500">Cargando venta...</div>}
+                                {saleLoading && <div className="text-sm text-muted-foreground">Cargando venta...</div>}
                                 {sale && (
-                                    <div className="text-sm bg-gray-50 p-3 rounded">
+                                    <div className="text-sm bg-muted p-3 rounded">
                                         <div><strong>{sale.sale_number}</strong> — {formatCurrency(Number(sale.total))}</div>
-                                        <div className="text-gray-500">{sale.items?.length || 0} items</div>
+                                        <div className="text-muted-foreground">{sale.items?.length || 0} items</div>
                                     </div>
                                 )}
                             </CardContent>
@@ -257,7 +257,7 @@ function EmitirPageInner() {
                                                 </Select>
                                             </div>
                                             <div className="col-span-1">
-                                                <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}><Trash2 className="h-4 w-4 text-red-500" /></Button>
+                                                <Button variant="ghost" size="sm" onClick={() => removeItem(idx)}><Trash2 className="h-4 w-4 text-destructive" /></Button>
                                             </div>
                                         </div>
                                     ))}
@@ -281,7 +281,7 @@ function EmitirPageInner() {
                             {mode === 'manual' ? (
                                 <div className="text-lg font-bold">Total estimado: {formatCurrency(manualTotal)}</div>
                             ) : (
-                                <div className="text-gray-500">Los totales se tomarán de la venta.</div>
+                                <div className="text-muted-foreground">Los totales se tomarán de la venta.</div>
                             )}
                             <Button className="w-full mt-3" onClick={handleSubmit} disabled={submitting}>
                                 {submitting ? 'Emitiendo...' : 'Emitir factura'}

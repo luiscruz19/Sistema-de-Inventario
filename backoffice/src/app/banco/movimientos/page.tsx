@@ -142,7 +142,7 @@ export default function MovimientosBancariosPage() {
             label: 'Monto',
             sortable: true,
             render: (v, row) => (
-                <span className={`font-semibold ${row.type === 'credito' ? 'text-green-600' : 'text-red-600'}`}>
+                <span className={`font-semibold ${row.type === 'credito' ? 'text-success' : 'text-destructive'}`}>
                     {row.type === 'credito' ? '+' : '-'}{formatCurrency(v as number)}
                 </span>
             ),
@@ -153,10 +153,10 @@ export default function MovimientosBancariosPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <ArrowUpDown className="h-6 w-6" /> Movimientos bancarios
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Creditos y debitos por cuenta</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Creditos y debitos por cuenta</p>
                 </div>
                 <Button onClick={() => { setForm(emptyForm); setShowModal(true) }}>
                     <Plus className="h-4 w-4 mr-2" /> Nuevo movimiento

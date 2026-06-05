@@ -63,7 +63,10 @@ export default function SucursalesPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Sucursales</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Sucursales</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Puntos de venta y depositos del negocio</p>
+                </div>
                 <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nueva sucursal</Button>
             </div>
 
@@ -82,7 +85,7 @@ export default function SucursalesPage() {
                             <CardContent className="p-5">
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <Building2 className="h-5 w-5 text-primary-500" />
+                                        <Building2 className="h-5 w-5 text-primary" />
                                         <h3 className="font-semibold">{branch.name}</h3>
                                     </div>
                                     <div className="flex gap-1">
@@ -90,7 +93,7 @@ export default function SucursalesPage() {
                                         <Badge variant={branch.active ? 'success' : 'secondary'} className="text-[10px]">{branch.active ? 'Activa' : 'Inactiva'}</Badge>
                                     </div>
                                 </div>
-                                <div className="space-y-1.5 text-sm text-gray-500 mb-4">
+                                <div className="space-y-1.5 text-sm text-muted-foreground mb-4">
                                     {branch.address && <div className="flex items-center gap-2"><MapPin className="h-3.5 w-3.5" /><span>{branch.address}</span></div>}
                                     {branch.phone && <div className="flex items-center gap-2"><Phone className="h-3.5 w-3.5" /><span>{branch.phone}</span></div>}
                                 </div>
@@ -99,7 +102,7 @@ export default function SucursalesPage() {
                                         <Pencil className="h-3 w-3 mr-1" /> Editar
                                     </Button>
                                     {!branch.is_main && (
-                                        <Button variant="outline" size="sm" className="text-red-500 hover:text-red-700" onClick={() => handleDelete(branch.id)}>
+                                        <Button variant="outline" size="sm" className="text-destructive hover:text-destructive/80" onClick={() => handleDelete(branch.id)}>
                                             <Trash2 className="h-3 w-3" />
                                         </Button>
                                     )}

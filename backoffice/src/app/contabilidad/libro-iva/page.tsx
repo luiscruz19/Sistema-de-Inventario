@@ -8,8 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { formatCurrency } from '@/lib/utils'
-import { Download, BookMarked } from 'lucide-react'
+import { Download, BookMarked, FileX } from 'lucide-react'
 
 type IVAType = 'ventas' | 'compras'
 
@@ -94,10 +96,10 @@ export default function LibroIVAPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <BookMarked className="h-6 w-6" /> Libro IVA
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Registro de comprobantes con IVA</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Registro de comprobantes con IVA</p>
                 </div>
                 <Button variant="outline" onClick={exportCSV}>
                     <Download className="h-4 w-4 mr-2" /> Exportar CSV
@@ -106,7 +108,7 @@ export default function LibroIVAPage() {
 
             <div className="flex gap-3 mb-6">
                 <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Periodo</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Periodo</Label>
                     <Input
                         type="month"
                         value={period}
@@ -115,7 +117,7 @@ export default function LibroIVAPage() {
                     />
                 </div>
                 <div>
-                    <Label className="text-xs text-gray-500 mb-1 block">Tipo</Label>
+                    <Label className="text-xs text-muted-foreground mb-1 block">Tipo</Label>
                     <Select value={type} onValueChange={(v) => setType(v as IVAType)}>
                         <SelectTrigger className="w-[160px]">
                             <SelectValue />
@@ -128,38 +130,47 @@ export default function LibroIVAPage() {
                 </div>
             </div>
 
-            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+            <div className="bg-card rounded-xl border border-border shadow-sm overflow-hidden">
                 {loading ? (
-                    <div className="p-8 text-center text-gray-400">Cargando...</div>
+                    <div className="divide-y divide-border">
+                        {[...Array(6)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-4 px-4 py-3">
+                                <Skeleton className="h-4 w-20" />
+                                <Skeleton className="h-4 w-28" />
+                                <Skeleton className="h-4 flex-1 max-w-[160px]" />
+                                <Skeleton className="h-4 w-20 ml-auto" />
+                            </div>
+                        ))}
+                    </div>
                 ) : (
                     <>
                         <div className="overflow-x-auto">
                             <table className="w-full text-sm">
                                 <thead>
-                                    <tr className="bg-gray-50 border-b border-gray-200">
-                                        <th className="text-left py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">Fecha</th>
-                                        <th className="text-left py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">Comprobante</th>
-                                        <th className="text-left py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">CUIT</th>
-                                        <th className="text-left py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">Nombre</th>
-                                        <th className="text-right py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">Neto grav.</th>
-                                        <th className="text-right py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">IVA 21%</th>
-                                        <th className="text-right py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">IVA 10.5%</th>
-                                        <th className="text-right py-3 px-4 font-semibold text-xs text-gray-500 uppercase tracking-wide">Total</th>
+                                    <tr className="bg-muted border-b border-border">
+                                        <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">Fecha</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">Comprobante</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">CUIT</th>
+                                        <th className="text-left py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">Nombre</th>
+                                        <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">Neto grav.</th>
+                                        <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">IVA 21%</th>
+                                        <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">IVA 10.5%</th>
+                                        <th className="text-right py-3 px-4 font-semibold text-xs text-muted-foreground uppercase tracking-wide">Total</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     {entries.length === 0 ? (
                                         <tr>
-                                            <td colSpan={8} className="py-8 text-center text-gray-400">
-                                                No hay registros para el periodo seleccionado
+                                            <td colSpan={8} className="p-0">
+                                                <EmptyState icon={FileX} title="Sin registros" description="No hay registros para el periodo seleccionado." />
                                             </td>
                                         </tr>
                                     ) : (
                                         entries.map((entry) => (
-                                            <tr key={entry.id} className="border-b border-gray-100 hover:bg-gray-50">
+                                            <tr key={entry.id} className="border-b border-border hover:bg-muted">
                                                 <td className="py-2 px-4 font-mono text-xs">{entry.date}</td>
                                                 <td className="py-2 px-4">
-                                                    <span className="text-xs text-gray-500">{entry.voucher_type}</span>
+                                                    <span className="text-xs text-muted-foreground">{entry.voucher_type}</span>
                                                     <span className="ml-1 font-mono">{entry.voucher_number}</span>
                                                 </td>
                                                 <td className="py-2 px-4 font-mono text-xs">{entry.cuit || '-'}</td>
@@ -178,22 +189,22 @@ export default function LibroIVAPage() {
                         {entries.length > 0 && (
                             <>
                                 <Separator />
-                                <div className="p-4 bg-gray-50">
+                                <div className="p-4 bg-muted">
                                     <div className="flex justify-end gap-8 text-sm">
                                         <div className="text-right">
-                                            <p className="text-gray-500 text-xs">Neto gravado</p>
+                                            <p className="text-muted-foreground text-xs">Neto gravado</p>
                                             <p className="font-semibold">{formatCurrency(totals.taxable_base)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-gray-500 text-xs">IVA 21%</p>
+                                            <p className="text-muted-foreground text-xs">IVA 21%</p>
                                             <p className="font-semibold">{formatCurrency(totals.iva_21)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-gray-500 text-xs">IVA 10.5%</p>
+                                            <p className="text-muted-foreground text-xs">IVA 10.5%</p>
                                             <p className="font-semibold">{formatCurrency(totals.iva_10_5)}</p>
                                         </div>
                                         <div className="text-right">
-                                            <p className="text-gray-500 text-xs font-semibold">TOTAL</p>
+                                            <p className="text-muted-foreground text-xs font-semibold">TOTAL</p>
                                             <p className="font-bold text-lg">{formatCurrency(totals.total)}</p>
                                         </div>
                                     </div>

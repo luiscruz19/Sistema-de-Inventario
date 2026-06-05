@@ -70,7 +70,7 @@ export default function ProveedoresPage() {
         { key: 'name', label: 'Nombre', sortable: true, render: (v) => <span className="font-medium">{v as string}</span> },
         { key: 'tax_id', label: 'CUIT', render: (v) => <span className="font-mono text-xs">{(v as string) || '-'}</span> },
         { key: 'contact_person', label: 'Contacto', render: (v) => (v as string) || '-' },
-        { key: 'email', label: 'Email', render: (v) => v ? <span className="text-primary-600">{v as string}</span> : '-' },
+        { key: 'email', label: 'Email', render: (v) => v ? <span className="text-primary">{v as string}</span> : '-' },
         { key: 'phone', label: 'Telefono', render: (v) => (v as string) || '-' },
         { key: 'payment_terms', label: 'Cond. pago', render: (v) => (v as string) || '-' },
         { key: 'active', label: 'Estado', render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activo' : 'Inactivo'}</Badge> },
@@ -79,7 +79,10 @@ export default function ProveedoresPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Proveedores</h1>
+                <div>
+                    <h1 className="text-2xl font-semibold tracking-tight">Proveedores</h1>
+                    <p className="text-sm text-muted-foreground mt-0.5">Gestiona tus proveedores y condiciones de pago</p>
+                </div>
                 <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nuevo proveedor</Button>
             </div>
 
@@ -90,7 +93,7 @@ export default function ProveedoresPage() {
                 actions={(row) => (
                     <div className="flex gap-1">
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
                     </div>
                 )}
             />

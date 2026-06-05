@@ -41,10 +41,10 @@ const emptyForm: ConnectionForm = {
 }
 
 const platformMap: Record<MarketplacePlatform, { label: string; color: string }> = {
-    mercadolibre: { label: 'MercadoLibre', color: 'bg-yellow-100 text-yellow-800' },
-    tiendanube: { label: 'Tiendanube', color: 'bg-blue-100 text-blue-800' },
-    shopify: { label: 'Shopify', color: 'bg-green-100 text-green-800' },
-    woocommerce: { label: 'WooCommerce', color: 'bg-purple-100 text-purple-800' },
+    mercadolibre: { label: 'MercadoLibre', color: 'bg-warning/10 text-warning' },
+    tiendanube: { label: 'Tiendanube', color: 'bg-primary/10 text-primary' },
+    shopify: { label: 'Shopify', color: 'bg-success/10 text-success' },
+    woocommerce: { label: 'WooCommerce', color: 'bg-primary/10 text-primary' },
 }
 
 export default function MarketplaceConexionesPage() {
@@ -147,15 +147,15 @@ export default function MarketplaceConexionesPage() {
             key: 'shop_url',
             label: 'Shop URL',
             render: (v) => v ? (
-                <a href={v as string} target="_blank" rel="noopener noreferrer" className="text-primary-600 text-sm hover:underline">
+                <a href={v as string} target="_blank" rel="noopener noreferrer" className="text-primary text-sm hover:underline">
                     {v as string}
                 </a>
-            ) : <span className="text-gray-400 text-sm">-</span>,
+            ) : <span className="text-muted-foreground text-sm">-</span>,
         },
         {
             key: 'last_sync',
             label: 'Ultimo sync',
-            render: (v) => v ? <span className="text-sm">{formatDateTime(v as string)}</span> : <span className="text-gray-400 text-sm">Nunca</span>,
+            render: (v) => v ? <span className="text-sm">{formatDateTime(v as string)}</span> : <span className="text-muted-foreground text-sm">Nunca</span>,
         },
         {
             key: 'active',
@@ -168,10 +168,10 @@ export default function MarketplaceConexionesPage() {
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <h1 className="text-2xl font-bold flex items-center gap-2">
+                    <h1 className="text-2xl font-semibold tracking-tight flex items-center gap-2">
                         <Link2 className="h-6 w-6" /> Conexiones de marketplace
                     </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Integraciones con canales de venta externos</p>
+                    <p className="text-sm text-muted-foreground mt-0.5">Integraciones con canales de venta externos</p>
                 </div>
                 <Button onClick={openCreate}>
                     <Plus className="h-4 w-4 mr-2" /> Nueva conexion
@@ -200,7 +200,7 @@ export default function MarketplaceConexionesPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}>
                             <Pencil className="h-4 w-4" />
                         </Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-red-500 hover:text-red-700" onClick={() => handleDelete(row.id)}>
+                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}>
                             <Trash2 className="h-4 w-4" />
                         </Button>
                     </div>
