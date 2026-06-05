@@ -12,11 +12,16 @@ ROOT    = docker-compose.yml
 .PHONY: up down logs migrate seed ps
 
 ## up: crea la red compartida y levanta infra + microservicios + raíz
-up:
+up: .env
 	docker network create net-shared 2>/dev/null || true
 	docker compose -f $(INFRA) up -d
 	docker compose -f $(MICROS) up -d
 	docker compose -f $(ROOT) up -d
+
+## .env: si no existe, lo crea a partir del ejemplo
+.env:
+	cp .env.example .env
+	@echo ">> Cree .env desde .env.example. Revisa los valores antes de usar en serio."
 
 ## down: baja los tres compose
 down:
