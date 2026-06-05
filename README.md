@@ -1,147 +1,162 @@
 # Sistema de Inventario
 
-ERP **single-tenant** pensado para PyMEs. Reúne en una sola plataforma la gestión
-de stock, ventas, facturación electrónica (AFIP/ARCA), compras, contabilidad,
-tesorería y la integración con marketplaces. Cada instancia atiende a **una sola
-empresa**: el código y la base de datos están dedicados a ese negocio.
+ERP single-tenant para PyMEs que reúne en una sola plataforma la gestión de
+stock, ventas, facturación electrónica (AFIP/ARCA), compras, contabilidad,
+tesorería y la integración con marketplaces. Cada instancia atiende a una sola
+empresa: el código y la base de datos están dedicados a ese negocio. Está
+construido sobre microservicios Node.js/Express con un backoffice en Next.js.
 
 ## Alcance
 
-### Qué incluye
+Qué incluye. Cada módulo es un microservicio independiente:
 
-Cada módulo es un microservicio Node.js/Express independiente:
+- productos: catálogo, categorías, variantes, sucursales, listas de precios, lotes, números de serie y configuración del negocio.
+- stock: existencias, movimientos, alertas y transferencias entre sucursales.
+- ventas: ventas, caja, reportes, notas de crédito y devoluciones.
+- compras: proveedores, órdenes de compra, clientes, cuenta corriente y administradores.
+- facturacion: facturación electrónica AFIP/ARCA, secuencias y configuración fiscal.
+- contabilidad: plan de cuentas, asientos, libro IVA, impuestos y retenciones.
+- tesoreria: cuentas bancarias, movimientos y cheques.
+- marketplace: integración con MercadoLibre (conexiones, productos y órdenes).
+- dashboard-bi: KPIs y métricas del negocio.
 
-- **productos** — catálogo, categorías, variantes, sucursales, listas de precios, lotes, números de serie y configuración del negocio.
-- **stock** — existencias, movimientos, alertas y transferencias entre sucursales.
-- **ventas** — ventas, caja, reportes, notas de crédito y devoluciones.
-- **compras** — proveedores, órdenes de compra, clientes, cuenta corriente de clientes y administradores.
-- **facturacion** — facturación electrónica AFIP/ARCA, secuencias fiscales y configuración fiscal.
-- **contabilidad** — plan de cuentas, asientos, libro IVA, impuestos y retenciones.
-- **tesoreria** — cuentas bancarias, movimientos y cheques.
-- **marketplace** — integración con MercadoLibre (conexiones, productos y órdenes).
-- **dashboard-bi** — KPIs y métricas del negocio.
-- **backoffice** — panel de gestión (Next.js) que consume todos los microservicios.
-- **auth** — autenticación JWT (login y validación de token).
-- **mailer** — envío de emails (SMTP).
+Qué no incluye:
 
-### Qué NO incluye
-
-- No es multi-empresa: es **single-tenant** (una empresa por instancia). Para
-  atender a otra empresa se despliega otra instancia.
-- No incluye almacenamiento de archivos (no hay servicio de storage/MinIO).
-- Las integraciones externas (AFIP/ARCA, MercadoLibre, SMTP) se configuran por
-  `.env` y vienen deshabilitadas/vacías por defecto.
+- No es multi-empresa: es single-tenant. Para atender a otra empresa se despliega otra instancia.
+- No incluye servicio de almacenamiento de archivos (storage/MinIO).
+- Las integraciones externas (AFIP/ARCA, MercadoLibre, SMTP) se configuran por `.env` y vienen deshabilitadas o vacías por defecto.
 
 ## Arquitectura
 
 ```
-                          ┌──────────────────────────┐
-   navegador  ──HTTP──▶   │   Traefik (reverse proxy) │
-                          └────────────┬─────────────┘
-                                       │ Host(inventario.localhost)
-                          ┌────────────▼─────────────┐
-                          │   backoffice (Next.js)    │
-                          └────────────┬─────────────┘
-                                       │ HTTP interno (net-shared)
-        ┌──────────────────────────────┼──────────────────────────────┐
-        ▼                ▼              ▼              ▼                ▼
-   productos          stock          ventas        compras       facturacion
-   contabilidad     tesoreria      marketplace   dashboard-bi
-        │                                                                │
-        └──── auth (JWT)        mailer (SMTP) ◀──── servicios core ──────┘
-                                       │
-                          ┌────────────▼─────────────┐
-                          │   MySQL (inventario,      │
-                          │          inventario_auth) │
-                          └──────────────────────────┘
+   navegador
+      |
+      | HTTP  Host(inventario.localhost)
+      v
+   Traefik (reverse proxy)
+      |
+      v
+   backoffice (Next.js)
+      |
+      | HTTP interno (red net-shared)
+      v
+   +--------------------------------------------------------------+
+   |  microservicios                  servicios core              |
+   |  productos    stock    ventas    auth (JWT)                  |
+   |  compras      facturacion        mailer (SMTP)               |
+   |  contabilidad tesoreria                                       |
+   |  marketplace  dashboard-bi                                    |
+   +--------------------------------------------------------------+
+      |
+      v
+   MySQL
 ```
 
-- Los microservicios viven en `microservicios-inventario/` y comparten código
-  común (`config`, `db`, `models`, `middlewares`, `requests`, `utils`,
-  `integrations`) ubicado en `microservicios-inventario/shared/`. Ese directorio
-  **se monta por volumen** en cada microservicio, evitando duplicar código.
-- Toda la comunicación interna ocurre sobre la red Docker externa `net-shared`.
-- El backoffice es el único servicio expuesto vía Traefik; auth y mailer son
-  internos.
+Los microservicios comparten modelos, conexión Sequelize y utilidades desde
+`microservicios-inventario/shared/`, montado en cada contenedor por volumen, de
+modo que el esquema de datos es único y consistente entre todos. Toda la
+comunicación interna ocurre sobre la red Docker `net-shared`; el backoffice es el
+único servicio expuesto vía Traefik.
+
+## Stack
+
+- Node.js + Express + Sequelize sobre MySQL (microservicios y servicios core).
+- Next.js (backoffice).
+- Docker y Docker Compose; Traefik como reverse proxy.
+
+## Requisitos
+
+- Docker
+- Docker Compose
 
 ## Cómo levantar
 
-### Requisitos
-
-- Docker
-- Docker Compose (plugin `docker compose`)
-- `make` (opcional, pero recomendado)
-
-### Pasos
-
-1. **Configurar variables de entorno:**
+1. Copiar el archivo de variables de entorno y ajustar los valores:
 
    ```bash
    cp .env.example .env
-   # editá .env con tus valores
    ```
 
-2. **Levantar todo con un comando:**
+2. Levantar la red compartida, la infraestructura, los microservicios y el backoffice:
 
    ```bash
    make up
    ```
 
-   Esto crea la red `net-shared` y levanta, en orden, la infraestructura
-   (MySQL + Traefik), los 9 microservicios y los servicios de la raíz
-   (backoffice, auth, mailer).
-
-3. **Correr las migraciones:**
+3. Correr las migraciones (se ejecutan dentro del contenedor):
 
    ```bash
    make migrate
    ```
 
-4. **Acceder al sistema:**
+4. Cargar datos demo:
 
-   - Backoffice: <http://inventario.localhost>
-   - Dashboard de Traefik: <http://localhost:8080>
+   ```bash
+   make seed
+   ```
 
-   Si tu sistema no resuelve `inventario.localhost`, agregá esta línea a
-   `/etc/hosts`:
+5. Agregar el host del backoffice a `/etc/hosts`:
 
    ```
    127.0.0.1   inventario.localhost
    ```
 
-### Otros comandos
+6. Acceder al backoffice en http://inventario.localhost. El dashboard de Traefik
+   queda en http://localhost:8080.
 
-```bash
-make ps      # estado de los contenedores
-make logs    # logs de los servicios de la raíz
-make down    # baja todos los servicios
-make seed    # carga de datos iniciales (pendiente)
-```
+   Credenciales del administrador demo:
+
+   - Usuario: `admin@inventario.local`
+   - Contraseña: `Admin1234!`
 
 ## Servicios
 
-| Contenedor                    | Rol                                   | Puerto / acceso              |
-|-------------------------------|---------------------------------------|------------------------------|
-| `inventario_traefik`          | Reverse proxy                         | `${HTTP_PORT:-80}` / `8080` (dashboard) |
-| `inventario_mysql`            | Base de datos MySQL                   | host `${DB_PORT_HOST:-3307}` → 3306 |
-| `inventario_backoffice`       | Panel de gestión (Next.js)            | 80 (vía Traefik)             |
-| `inventario_auth`             | Autenticación JWT                     | interno (80)                 |
-| `inventario_mailer`           | Envío de emails (SMTP)                | interno (80)                 |
-| `inventario_ms_productos`     | Catálogo y configuración              | interno                      |
-| `inventario_ms_stock`         | Existencias y movimientos             | interno                      |
-| `inventario_ms_ventas`        | Ventas y caja                         | interno                      |
-| `inventario_ms_compras`       | Compras, proveedores y clientes       | interno                      |
-| `inventario_ms_facturacion`   | Facturación electrónica AFIP/ARCA     | interno                      |
-| `inventario_ms_contabilidad`  | Contabilidad e impuestos              | interno                      |
-| `inventario_ms_tesoreria`     | Tesorería (bancos, cheques)           | interno                      |
-| `inventario_ms_marketplace`   | Integración MercadoLibre              | interno                      |
-| `inventario_ms_dashboard-bi`  | KPIs y métricas                       | interno                      |
+| Servicio | Rol | URL/host |
+|---|---|---|
+| inventario_traefik | Reverse proxy | `${HTTP_PORT:-80}`, dashboard en `:8080` |
+| inventario_mysql | Base de datos MySQL | host `${DB_PORT_HOST:-3307}` -> 3306 |
+| inventario_backoffice | Panel de gestión (Next.js) | http://inventario.localhost (vía Traefik) |
+| inventario_auth | Autenticación JWT | interno |
+| inventario_mailer | Envío de emails (SMTP) | interno |
+| inventario_ms_productos | Catálogo y configuración | interno |
+| inventario_ms_stock | Existencias y movimientos | interno |
+| inventario_ms_ventas | Ventas y caja | interno |
+| inventario_ms_compras | Compras, proveedores y clientes | interno |
+| inventario_ms_facturacion | Facturación electrónica AFIP/ARCA | interno |
+| inventario_ms_contabilidad | Contabilidad e impuestos | interno |
+| inventario_ms_tesoreria | Tesorería (bancos, cheques) | interno |
+| inventario_ms_marketplace | Integración MercadoLibre | interno |
+| inventario_ms_dashboard-bi | KPIs y métricas | interno |
+
+## Integraciones
+
+| Integración | Estado | Cómo activar |
+|---|---|---|
+| MercadoLibre | Código real, requiere credenciales | Crear una aplicación en MercadoLibre, obtener las credenciales OAuth y registrar la conexión (access/refresh token y seller_id) desde el módulo marketplace. |
+| AFIP/ARCA (facturación) | Modo simulado por defecto | El modo simulado genera un CAE de demostración; no es un comprobante fiscal válido. El modo real requiere certificado y clave privada (`ARCA_CERT_PEM`, `ARCA_KEY_PEM`), CUIT, punto de venta y la librería `soap`; se habilita con `ARCA_ENABLED=true` y `ARCA_ENVIRONMENT`. |
+| SMTP (mailer) | Requiere credenciales | Configurar `MAILER_SMTP_HOST`, `MAILER_SMTP_PORT`, `MAILER_USER` y `MAILER_PASSWORD` en `.env`. |
 
 ## Variables de entorno
 
-Todas las variables necesarias están documentadas y comentadas por sección en
+Todas las variables están documentadas y comentadas por sección en
 [`.env.example`](./.env.example). Copialo a `.env` y ajustá los valores antes de
-levantar el sistema. **Nunca** commitees el `.env` real.
+levantar el sistema. No commitees el `.env` real.
+
+## Diccionario de datos
+
+El esquema de la base de datos está documentado en
+[`docs/DICCIONARIO-DE-DATOS.md`](./docs/DICCIONARIO-DE-DATOS.md).
+
+## Comandos (Makefile)
+
+| Target | Descripción |
+|---|---|
+| `make up` | Crea la red compartida y levanta infra + microservicios + backoffice/auth/mailer. |
+| `make down` | Baja todos los servicios. |
+| `make logs` | Sigue los logs de los servicios de la raíz. |
+| `make migrate` | Corre las migraciones dentro del contenedor. |
+| `make seed` | Carga datos demo. |
+| `make ps` | Muestra el estado de los contenedores. |
 
 ## Licencia
 
