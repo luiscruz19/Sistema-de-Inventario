@@ -9,7 +9,7 @@ INFRA   = docker-compose.infra.yml
 MICROS  = microservicios-inventario/docker-compose.yml
 ROOT    = docker-compose.yml
 
-.PHONY: up down logs migrate seed ps
+.PHONY: up down logs migrate seed ps reset
 
 ## up: crea la red compartida y levanta infra + microservicios + raíz
 up: .env
@@ -52,3 +52,12 @@ ps:
 	docker compose -f $(INFRA) ps
 	docker compose -f $(MICROS) ps
 	docker compose -f $(ROOT) ps
+
+## reset: limpia volumenes y rehace todo desde cero (up + migrate + seed)
+reset:
+	docker compose down 2>/dev/null || true
+	docker compose -f $(MICROS) down 2>/dev/null || true
+	docker compose -f $(INFRA) down -v 2>/dev/null || true
+	$(MAKE) up
+	$(MAKE) migrate
+	$(MAKE) seed
