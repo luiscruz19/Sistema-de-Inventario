@@ -11,8 +11,9 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-secret}
       TZ: America/Argentina/Buenos_Aires
-    ports:
-      - "${DB_PORT_HOST:-3307}:3306"
+    # Acceso interno por net-shared. Para conectar un cliente externo, descomentar:
+    # ports:
+    #   - "${DB_PORT_HOST:-3307}:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./infra/mysql-init.sql:/docker-entrypoint-initdb.d/init.sql:ro
