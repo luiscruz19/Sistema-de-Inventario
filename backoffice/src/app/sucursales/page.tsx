@@ -9,6 +9,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, Building2, MapPin, Phone, Star } from 'lucide-react'
 import type { Branch } from '@/types'
@@ -66,9 +68,13 @@ export default function SucursalesPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 text-gray-400">Cargando sucursales...</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...Array(3)].map((_, i) => (
+                        <Card key={i}><CardContent className="p-5 space-y-3"><Skeleton className="h-5 w-32" /><Skeleton className="h-4 w-40" /><Skeleton className="h-4 w-24" /><Skeleton className="h-8 w-full" /></CardContent></Card>
+                    ))}
+                </div>
             ) : branches.length === 0 ? (
-                <Card><CardContent className="py-12 text-center"><Building2 className="h-12 w-12 mx-auto mb-3 text-gray-300" /><p className="text-gray-500">No hay sucursales creadas</p></CardContent></Card>
+                <Card><CardContent className="p-0"><EmptyState icon={Building2} title="No hay sucursales creadas" description="Crea tu primera sucursal para empezar a operar." action={<Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nueva sucursal</Button>} /></CardContent></Card>
             ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     {branches.map(branch => (

@@ -6,6 +6,8 @@ import { useApi } from '@/hooks/use-api'
 import { useKpis } from '@/hooks/use-kpis'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import {
@@ -108,10 +110,10 @@ export default function DashboardPage() {
     useEffect(() => { loadKpis() }, [loadKpis])
 
     const statCards = [
-        { title: 'Ventas hoy', value: stats.salesToday, icon: ShoppingCart, color: 'text-primary-600', bg: 'bg-primary-50' },
-        { title: 'Ingresos del dia', value: formatCurrency(stats.revenueToday), icon: DollarSign, color: 'text-green-600', bg: 'bg-green-50' },
-        { title: 'Alertas stock bajo', value: stats.lowStockCount, icon: AlertTriangle, color: 'text-yellow-600', bg: 'bg-yellow-50' },
-        { title: 'Clientes activos', value: stats.activeCustomers, icon: Users, color: 'text-purple-600', bg: 'bg-purple-50' },
+        { title: 'Ventas hoy', value: stats.salesToday, icon: ShoppingCart, color: 'text-primary', bg: 'bg-primary/10' },
+        { title: 'Ingresos del dia', value: formatCurrency(stats.revenueToday), icon: DollarSign, color: 'text-success', bg: 'bg-success/10' },
+        { title: 'Alertas stock bajo', value: stats.lowStockCount, icon: AlertTriangle, color: 'text-warning', bg: 'bg-warning/10' },
+        { title: 'Clientes activos', value: stats.activeCustomers, icon: Users, color: 'text-foreground', bg: 'bg-muted' },
     ]
 
     // Delta de ventas vs mes anterior
@@ -120,7 +122,7 @@ export default function DashboardPage() {
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-bold">Dashboard</h1>
+                <h1 className="text-2xl font-semibold tracking-tight">Dashboard</h1>
                 <Select value={period} onValueChange={setPeriod}>
                     <SelectTrigger className="w-[140px]">
                         <SelectValue />
@@ -140,14 +142,18 @@ export default function DashboardPage() {
                     return (
                         <Card key={card.title}>
                             <CardContent className="p-5">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <p className="text-sm text-gray-500">{card.title}</p>
-                                        <p className={`text-2xl font-bold mt-1 ${card.color}`}>
-                                            {loading ? '...' : card.value}
-                                        </p>
+                                <div className="flex items-start justify-between">
+                                    <div className="min-w-0">
+                                        <p className="text-sm text-muted-foreground">{card.title}</p>
+                                        {loading ? (
+                                            <Skeleton className="mt-2 h-8 w-24" />
+                                        ) : (
+                                            <p className="text-3xl font-semibold tracking-tight mt-1 text-foreground">
+                                                {card.value}
+                                            </p>
+                                        )}
                                     </div>
-                                    <div className={`w-11 h-11 rounded-lg ${card.bg} flex items-center justify-center`}>
+                                    <div className={`w-11 h-11 rounded-lg ${card.bg} flex items-center justify-center shrink-0`}>
                                         <Icon className={`h-5 w-5 ${card.color}`} />
                                     </div>
                                 </div>
@@ -158,30 +164,30 @@ export default function DashboardPage() {
             </div>
 
             {/* KPI cards — BI (facturación/dashboard-bi) */}
-            <h2 className="text-base font-semibold text-gray-700 mb-3">Indicadores del negocio</h2>
+            <h2 className="text-base font-semibold text-foreground mb-3">Indicadores del negocio</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
                 {/* Ventas vs mes anterior */}
                 <Card>
                     <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm text-gray-500">Ventas este mes</p>
-                            <div className="w-9 h-9 rounded-lg bg-blue-50 flex items-center justify-center">
+                            <p className="text-sm text-muted-foreground">Ventas este mes</p>
+                            <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">
                                 {deltaPositive
-                                    ? <TrendingUp className="h-4 w-4 text-blue-600" />
-                                    : <TrendingDown className="h-4 w-4 text-red-500" />}
+                                    ? <TrendingUp className="h-4 w-4 text-primary" />
+                                    : <TrendingDown className="h-4 w-4 text-destructive" />}
                             </div>
                         </div>
                         {kpiLoading ? (
-                            <p className="text-2xl font-bold text-gray-300">...</p>
+                            <Skeleton className="mt-1 h-8 w-28" />
                         ) : salesKpi ? (
                             <>
-                                <p className="text-2xl font-bold text-blue-700">{formatCurrency(salesKpi.current_month.total)}</p>
-                                <p className={`text-xs mt-1 ${deltaPositive ? 'text-green-600' : 'text-red-500'}`}>
+                                <p className="text-2xl font-semibold tracking-tight text-foreground">{formatCurrency(salesKpi.current_month.total)}</p>
+                                <p className={`text-xs mt-1 ${deltaPositive ? 'text-success' : 'text-destructive'}`}>
                                     {deltaPositive ? '+' : ''}{salesKpi.delta_percentage !== null ? salesKpi.delta_percentage.toFixed(1) : '—'}% vs mes anterior
                                 </p>
                             </>
                         ) : (
-                            <p className="text-sm text-gray-400">Sin datos</p>
+                            <p className="text-sm text-muted-foreground">Sin datos</p>
                         )}
                     </CardContent>
                 </Card>
@@ -190,25 +196,25 @@ export default function DashboardPage() {
                 <Card>
                     <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm text-gray-500">Cuentas a cobrar</p>
-                            <div className="w-9 h-9 rounded-lg bg-orange-50 flex items-center justify-center">
-                                <Clock className="h-4 w-4 text-orange-600" />
+                            <p className="text-sm text-muted-foreground">Cuentas a cobrar</p>
+                            <div className="w-9 h-9 rounded-lg bg-warning/10 flex items-center justify-center">
+                                <Clock className="h-4 w-4 text-warning" />
                             </div>
                         </div>
                         {kpiLoading ? (
-                            <p className="text-2xl font-bold text-gray-300">...</p>
+                            <Skeleton className="mt-1 h-8 w-28" />
                         ) : agingKpi ? (
                             <>
-                                <p className="text-2xl font-bold text-orange-700">{formatCurrency(agingKpi.total)}</p>
-                                <div className="flex gap-2 mt-1 flex-wrap">
-                                    <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded">0-30d: {formatCurrency(agingKpi.buckets['0-30'])}</span>
-                                    <span className="text-[10px] bg-yellow-100 text-yellow-700 px-1.5 py-0.5 rounded">31-60d: {formatCurrency(agingKpi.buckets['31-60'])}</span>
-                                    <span className="text-[10px] bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded">61-90d: {formatCurrency(agingKpi.buckets['61-90'])}</span>
-                                    <span className="text-[10px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded">+90d: {formatCurrency(agingKpi.buckets['90+'])}</span>
+                                <p className="text-2xl font-semibold tracking-tight text-foreground">{formatCurrency(agingKpi.total)}</p>
+                                <div className="flex gap-2 mt-2 flex-wrap">
+                                    <span className="text-[10px] bg-success/10 text-success px-1.5 py-0.5 rounded">0-30d: {formatCurrency(agingKpi.buckets['0-30'])}</span>
+                                    <span className="text-[10px] bg-warning/10 text-warning px-1.5 py-0.5 rounded">31-60d: {formatCurrency(agingKpi.buckets['31-60'])}</span>
+                                    <span className="text-[10px] bg-warning/10 text-warning px-1.5 py-0.5 rounded">61-90d: {formatCurrency(agingKpi.buckets['61-90'])}</span>
+                                    <span className="text-[10px] bg-destructive/10 text-destructive px-1.5 py-0.5 rounded">+90d: {formatCurrency(agingKpi.buckets['90+'])}</span>
                                 </div>
                             </>
                         ) : (
-                            <p className="text-sm text-gray-400">Sin datos</p>
+                            <p className="text-sm text-muted-foreground">Sin datos</p>
                         )}
                     </CardContent>
                 </Card>
@@ -217,20 +223,20 @@ export default function DashboardPage() {
                 <Card>
                     <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm text-gray-500">Disponible en caja</p>
-                            <div className="w-9 h-9 rounded-lg bg-emerald-50 flex items-center justify-center">
-                                <Wallet className="h-4 w-4 text-emerald-600" />
+                            <p className="text-sm text-muted-foreground">Disponible en caja</p>
+                            <div className="w-9 h-9 rounded-lg bg-success/10 flex items-center justify-center">
+                                <Wallet className="h-4 w-4 text-success" />
                             </div>
                         </div>
                         {kpiLoading ? (
-                            <p className="text-2xl font-bold text-gray-300">...</p>
+                            <Skeleton className="mt-1 h-8 w-28" />
                         ) : cashKpi ? (
                             <>
-                                <p className="text-2xl font-bold text-emerald-700">{formatCurrency(cashKpi.estimated_cash)}</p>
-                                <p className="text-xs text-gray-400 mt-1">{cashKpi.open_registers} {cashKpi.open_registers === 1 ? 'caja abierta' : 'cajas abiertas'}</p>
+                                <p className="text-2xl font-semibold tracking-tight text-foreground">{formatCurrency(cashKpi.estimated_cash)}</p>
+                                <p className="text-xs text-muted-foreground mt-1">{cashKpi.open_registers} {cashKpi.open_registers === 1 ? 'caja abierta' : 'cajas abiertas'}</p>
                             </>
                         ) : (
-                            <p className="text-sm text-gray-400">Sin cajas abiertas</p>
+                            <p className="text-sm text-muted-foreground">Sin cajas abiertas</p>
                         )}
                     </CardContent>
                 </Card>
@@ -239,22 +245,22 @@ export default function DashboardPage() {
                 <Card>
                     <CardContent className="p-5">
                         <div className="flex items-center justify-between mb-1">
-                            <p className="text-sm text-gray-500">Stock bajo</p>
-                            <div className="w-9 h-9 rounded-lg bg-red-50 flex items-center justify-center">
-                                <Package className="h-4 w-4 text-red-600" />
+                            <p className="text-sm text-muted-foreground">Stock bajo</p>
+                            <div className="w-9 h-9 rounded-lg bg-destructive/10 flex items-center justify-center">
+                                <Package className="h-4 w-4 text-destructive" />
                             </div>
                         </div>
                         {kpiLoading ? (
-                            <p className="text-2xl font-bold text-gray-300">...</p>
+                            <Skeleton className="mt-1 h-8 w-16" />
                         ) : stockAlertsKpi !== null ? (
                             <>
-                                <p className="text-2xl font-bold text-red-600">{stockAlertsKpi.count}</p>
-                                <p className="text-xs text-gray-400 mt-1">
+                                <p className="text-2xl font-semibold tracking-tight text-destructive">{stockAlertsKpi.count}</p>
+                                <p className="text-xs text-muted-foreground mt-1">
                                     {stockAlertsKpi.count === 0 ? 'Todo en orden' : `producto${stockAlertsKpi.count === 1 ? '' : 's'} por reponer`}
                                 </p>
                             </>
                         ) : (
-                            <p className="text-sm text-gray-400">Sin datos</p>
+                            <p className="text-sm text-muted-foreground">Sin datos</p>
                         )}
                     </CardContent>
                 </Card>
@@ -265,20 +271,28 @@ export default function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
-                            <Users className="h-4 w-4 text-purple-600" />
+                            <Users className="h-4 w-4 text-primary" />
                             Top 5 clientes por ventas
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {kpiLoading ? (
-                            <p className="text-sm text-gray-400 text-center py-4">Cargando...</p>
+                            <div className="space-y-3">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <Skeleton className="h-6 w-6 rounded-full" />
+                                        <Skeleton className="h-4 flex-1" />
+                                        <Skeleton className="h-4 w-16" />
+                                    </div>
+                                ))}
+                            </div>
                         ) : topCustomersKpi.length === 0 ? (
-                            <p className="text-sm text-gray-400 text-center py-4">Sin datos disponibles</p>
+                            <EmptyState icon={Users} title="Sin datos disponibles" description="Todavia no hay ventas registradas para mostrar el ranking de clientes." className="py-6" />
                         ) : (
                             <div className="space-y-3">
                                 {topCustomersKpi.map((c, idx) => (
                                     <div key={c.customer_id} className="flex items-center gap-3">
-                                        <span className="w-6 h-6 rounded-full bg-purple-50 text-purple-600 text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
+                                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate">{c.customer_name}</p>
                                         </div>
@@ -294,23 +308,31 @@ export default function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
-                            <TrendingUp className="h-4 w-4 text-primary-600" />
+                            <TrendingUp className="h-4 w-4 text-primary" />
                             Top 5 productos mas vendidos
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
                         {kpiLoading ? (
-                            <p className="text-sm text-gray-400 text-center py-4">Cargando...</p>
+                            <div className="space-y-3">
+                                {[...Array(5)].map((_, i) => (
+                                    <div key={i} className="flex items-center gap-3">
+                                        <Skeleton className="h-6 w-6 rounded-full" />
+                                        <Skeleton className="h-4 flex-1" />
+                                        <Skeleton className="h-4 w-16" />
+                                    </div>
+                                ))}
+                            </div>
                         ) : topProductsKpi.length > 0 ? (
                             <div className="space-y-3">
                                 {topProductsKpi.map((p, idx) => (
                                     <div key={p.product_id} className="flex items-center gap-3">
-                                        <span className="w-6 h-6 rounded-full bg-primary-50 text-primary-600 text-xs font-bold flex items-center justify-center">{idx + 1}</span>
+                                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate">{p.product_name}</p>
-                                            <p className="text-xs text-gray-400">{p.quantity} vendidos</p>
+                                            <p className="text-xs text-muted-foreground">{p.quantity} vendidos</p>
                                         </div>
-                                        <span className="text-sm font-semibold">{formatCurrency(p.total)}</span>
+                                        <span className="text-sm font-semibold shrink-0">{formatCurrency(p.total)}</span>
                                     </div>
                                 ))}
                             </div>
@@ -318,17 +340,17 @@ export default function DashboardPage() {
                             <div className="space-y-3">
                                 {topProducts.slice(0, 5).map((p, idx) => (
                                     <div key={p.name} className="flex items-center gap-3">
-                                        <span className="w-6 h-6 rounded-full bg-primary-50 text-primary-600 text-xs font-bold flex items-center justify-center">{idx + 1}</span>
+                                        <span className="w-6 h-6 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center shrink-0">{idx + 1}</span>
                                         <div className="flex-1 min-w-0">
                                             <p className="text-sm font-medium truncate">{p.name}</p>
-                                            <p className="text-xs text-gray-400">{p.quantity} vendidos</p>
+                                            <p className="text-xs text-muted-foreground">{p.quantity} vendidos</p>
                                         </div>
-                                        <span className="text-sm font-semibold">{formatCurrency(p.revenue)}</span>
+                                        <span className="text-sm font-semibold shrink-0">{formatCurrency(p.revenue)}</span>
                                     </div>
                                 ))}
                             </div>
                         ) : (
-                            <p className="text-sm text-gray-400 text-center py-4">Sin datos para el periodo</p>
+                            <EmptyState icon={TrendingUp} title="Sin datos para el periodo" description="Las ventas registradas alimentaran este ranking." className="py-6" />
                         )}
                     </CardContent>
                 </Card>
@@ -337,20 +359,29 @@ export default function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
-                            <ShoppingCart className="h-4 w-4 text-green-600" />
+                            <ShoppingCart className="h-4 w-4 text-success" />
                             Ultimas ventas
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {recentSales.length === 0 ? (
-                            <p className="text-sm text-gray-400 text-center py-4">Sin ventas recientes</p>
+                        {loading ? (
+                            <div className="space-y-3">
+                                {[...Array(4)].map((_, i) => (
+                                    <div key={i} className="flex items-center justify-between">
+                                        <Skeleton className="h-8 w-32" />
+                                        <Skeleton className="h-8 w-20" />
+                                    </div>
+                                ))}
+                            </div>
+                        ) : recentSales.length === 0 ? (
+                            <EmptyState icon={ShoppingCart} title="Sin ventas recientes" description="Las ventas del dia apareceran aqui." className="py-6" />
                         ) : (
                             <div className="space-y-3">
                                 {recentSales.map((sale) => (
                                     <div key={sale.id} className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm font-medium">{sale.sale_number || `#${sale.id}`}</p>
-                                            <p className="text-xs text-gray-400">{sale.createdAt ? formatDateTime(sale.createdAt) : ''}</p>
+                                            <p className="text-xs text-muted-foreground">{sale.createdAt ? formatDateTime(sale.createdAt) : ''}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-sm font-semibold">{formatCurrency(sale.total)}</p>
@@ -369,21 +400,21 @@ export default function DashboardPage() {
                 <Card>
                     <CardHeader>
                         <CardTitle className="text-base flex items-center gap-2">
-                            <FileText className="h-4 w-4 text-blue-600" />
+                            <FileText className="h-4 w-4 text-primary" />
                             Facturación electrónica
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        <p className="text-sm text-gray-500 mb-4">
+                        <p className="text-sm text-muted-foreground mb-4">
                             Emitir comprobantes AFIP/ARCA y ver el estado de las facturas emitidas.
                         </p>
-                        <div className="flex gap-2">
+                        <div className="flex items-center gap-2">
                             <Link href="/inventario/facturacion/emitir">
-                                <button className="text-sm font-medium text-primary-600 hover:underline">Emitir factura</button>
+                                <button className="text-sm font-medium text-primary hover:underline">Emitir factura</button>
                             </Link>
-                            <span className="text-gray-300">|</span>
+                            <span className="text-border">|</span>
                             <Link href="/inventario/facturacion">
-                                <button className="text-sm font-medium text-gray-600 hover:underline">Ver todas las facturas</button>
+                                <button className="text-sm font-medium text-muted-foreground hover:text-foreground hover:underline">Ver todas las facturas</button>
                             </Link>
                         </div>
                     </CardContent>
@@ -394,13 +425,13 @@ export default function DashboardPage() {
             <Card>
                 <CardHeader>
                     <CardTitle className="text-base flex items-center gap-2">
-                        <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                        <AlertTriangle className="h-4 w-4 text-warning" />
                         Alertas de stock bajo
                     </CardTitle>
                 </CardHeader>
                 <CardContent>
                     {lowStockProducts.length === 0 && (!stockAlertsKpi || stockAlertsKpi.count === 0) ? (
-                        <p className="text-sm text-gray-400 text-center py-4">Todos los productos tienen stock suficiente</p>
+                        <EmptyState icon={Package} title="Todo en orden" description="Todos los productos tienen stock suficiente." className="py-6" />
                     ) : (
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                             {/* productos del KPI si existen, sino fallback a alerts */}
@@ -408,11 +439,11 @@ export default function DashboardPage() {
                                 ? stockAlertsKpi.products.slice(0, 6)
                                 : lowStockProducts.map(p => ({ id: p.id, name: p.name, sku: p.sku, min_stock_alert: p.min_stock_alert, total_stock: 0 }))
                             ).map((p) => (
-                                <div key={p.id} className="flex items-center gap-3 p-3 bg-yellow-50 rounded-lg border border-yellow-100">
-                                    <AlertTriangle className="h-4 w-4 text-yellow-600 shrink-0" />
+                                <div key={p.id} className="flex items-center gap-3 p-3 bg-warning/10 rounded-lg border border-warning/20">
+                                    <AlertTriangle className="h-4 w-4 text-warning shrink-0" />
                                     <div className="min-w-0">
                                         <p className="text-sm font-medium truncate">{p.name}</p>
-                                        <p className="text-xs text-yellow-700">Stock: {p.total_stock} / Min: {p.min_stock_alert}</p>
+                                        <p className="text-xs text-warning">Stock: {p.total_stock} / Min: {p.min_stock_alert}</p>
                                     </div>
                                 </div>
                             ))}

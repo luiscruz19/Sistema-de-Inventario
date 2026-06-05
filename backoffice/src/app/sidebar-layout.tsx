@@ -36,10 +36,10 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
     if (!checked) return null
 
     return (
-        <div className="flex min-h-screen">
+        <div className="flex min-h-screen bg-muted/30">
             <Sidebar />
             <main className="flex-1 overflow-auto">
-                <div className="p-6 lg:p-8 max-w-7xl">
+                <div className="p-6 lg:p-8 max-w-7xl mx-auto">
                     {children}
                 </div>
             </main>

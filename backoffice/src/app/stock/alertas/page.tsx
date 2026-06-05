@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from '@/components/common/EmptyState'
 import { AlertTriangle, Package } from 'lucide-react'
 import type { Product } from '@/types'
 
@@ -28,12 +30,15 @@ export default function AlertasPage() {
             </div>
 
             {loading ? (
-                <div className="text-center py-12 text-gray-400">Cargando alertas...</div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {[...Array(3)].map((_, i) => (
+                        <Card key={i}><CardContent className="p-5 space-y-3"><Skeleton className="h-5 w-40" /><Skeleton className="h-4 w-28" /><Skeleton className="h-4 w-24" /></CardContent></Card>
+                    ))}
+                </div>
             ) : alerts.length === 0 ? (
                 <Card>
-                    <CardContent className="py-12 text-center">
-                        <Package className="h-12 w-12 mx-auto mb-3 text-green-300" />
-                        <p className="text-gray-500">Todos los productos tienen stock suficiente</p>
+                    <CardContent className="p-0">
+                        <EmptyState icon={Package} title="Todo en orden" description="Todos los productos tienen stock suficiente." />
                     </CardContent>
                 </Card>
             ) : (

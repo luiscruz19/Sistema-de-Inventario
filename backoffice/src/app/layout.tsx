@@ -1,6 +1,13 @@
 import type { Metadata } from 'next';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { SidebarLayout } from './sidebar-layout';
+
+const inter = Inter({
+    subsets: ['latin'],
+    display: 'swap',
+    variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
     title: 'Inventario y Ventas - Panel de administracion',
@@ -9,8 +16,8 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="es">
-            <body>
+        <html lang="es" className={inter.variable}>
+            <body className="font-sans">
                 <SidebarLayout>{children}</SidebarLayout>
             </body>
         </html>

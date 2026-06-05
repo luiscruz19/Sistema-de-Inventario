@@ -6,7 +6,9 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Pagination } from './Pagination'
-import { Search, ArrowUpDown, ArrowUp, ArrowDown, Loader2 } from 'lucide-react'
+import { Skeleton } from '@/components/ui/skeleton'
+import { EmptyState } from './EmptyState'
+import { Search, ArrowUpDown, ArrowUp, ArrowDown, Inbox } from 'lucide-react'
 import type { Pagination as PaginationType } from '@/types'
 
 export interface Column<T> {
@@ -100,14 +102,14 @@ export function DataTable<T extends Record<string, unknown>>({
     const renderSortIcon = (field: string) => {
         if (currentSortField !== field) return <ArrowUpDown className="h-3 w-3 ml-1 opacity-40" />
         return currentSortOrder === 'asc'
-            ? <ArrowUp className="h-3 w-3 ml-1 text-primary-600" />
-            : <ArrowDown className="h-3 w-3 ml-1 text-primary-600" />
+            ? <ArrowUp className="h-3 w-3 ml-1 text-primary" />
+            : <ArrowDown className="h-3 w-3 ml-1 text-primary" />
     }
 
     const getCellValue = (row: T, col: Column<T>) => {
         const value = getNestedValue(row, col.key)
         if (col.render) return col.render(value, row)
-        if (value == null) return <span className="text-gray-400">-</span>
+        if (value == null) return <span className="text-muted-foreground">-</span>
         return String(value)
     }
 
@@ -117,7 +119,7 @@ export function DataTable<T extends Record<string, unknown>>({
                 <div className="flex flex-col sm:flex-row gap-3">
                     {onSearchChange && (
                         <div className="relative flex-1 max-w-sm">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                             <Input
                                 placeholder={searchPlaceholder}
                                 value={searchValue || ''}
@@ -146,42 +148,48 @@ export function DataTable<T extends Record<string, unknown>>({
                 </div>
             )}
 
-            <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+            <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
                 <Table>
                     <TableHeader>
-                        <TableRow className="bg-gray-50 border-b border-gray-200">
+                        <TableRow>
                             {columns.map((col) => (
                                 <TableHead key={col.key} className={col.className}>
                                     {col.sortable ? (
                                         <button
-                                            className="flex items-center text-xs font-semibold uppercase tracking-wider text-gray-500 hover:text-gray-700"
+                                            className="flex items-center text-xs font-medium uppercase tracking-wide text-muted-foreground transition-colors hover:text-foreground"
                                             onClick={() => handleSort(col.key)}
                                         >
                                             {col.label}
                                             {renderSortIcon(col.key)}
                                         </button>
                                     ) : (
-                                        <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">{col.label}</span>
+                                        col.label
                                     )}
                                 </TableHead>
                             ))}
-                            {actions && <TableHead className="w-[100px]"><span className="text-xs font-semibold uppercase tracking-wider text-gray-500">Acciones</span></TableHead>}
+                            {actions && <TableHead className="w-[100px]">Acciones</TableHead>}
                         </TableRow>
                     </TableHeader>
                     <TableBody>
                         {isLoading ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="text-center py-12">
-                                    <div className="flex items-center justify-center gap-2 text-gray-500">
-                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                        Cargando...
-                                    </div>
-                                </TableCell>
-                            </TableRow>
+                            [...Array(6)].map((_, rowIdx) => (
+                                <TableRow key={`skeleton-${rowIdx}`}>
+                                    {columns.map((col) => (
+                                        <TableCell key={col.key} className={col.className}>
+                                            <Skeleton className="h-4 w-full max-w-[140px]" />
+                                        </TableCell>
+                                    ))}
+                                    {actions && (
+                                        <TableCell>
+                                            <Skeleton className="h-4 w-16" />
+                                        </TableCell>
+                                    )}
+                                </TableRow>
+                            ))
                         ) : sortedData.length === 0 ? (
-                            <TableRow>
-                                <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="text-center py-12 text-gray-500">
-                                    {emptyMessage}
+                            <TableRow className="hover:bg-transparent">
+                                <TableCell colSpan={columns.length + (actions ? 1 : 0)} className="p-0">
+                                    <EmptyState icon={Inbox} title={emptyMessage} />
                                 </TableCell>
                             </TableRow>
                         ) : (

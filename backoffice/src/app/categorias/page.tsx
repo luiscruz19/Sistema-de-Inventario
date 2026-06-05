@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Skeleton } from '@/components/ui/skeleton'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, ChevronRight, FolderOpen, Folder } from 'lucide-react'
 import type { Category } from '@/types'
@@ -94,17 +95,21 @@ export default function CategoriasPage() {
                 <Button onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" /> Nueva categoria</Button>
             </div>
 
-            <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                <div className="flex items-center gap-3 py-2.5 px-4 bg-gray-50 border-b border-gray-200 text-xs font-semibold uppercase tracking-wider text-gray-500">
+            <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+                <div className="flex items-center gap-3 py-2.5 px-4 bg-muted/50 border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">
                     <span className="flex-1 pl-6">Nombre</span>
                     <span className="w-16 text-center">Estado</span>
                     <span className="w-8 text-center">Orden</span>
                     <span className="w-24 text-center">Acciones</span>
                 </div>
                 {loading ? (
-                    <div className="p-8 text-center text-gray-400">Cargando categorias...</div>
+                    <div className="divide-y divide-border">
+                        {[...Array(5)].map((_, i) => (
+                            <div key={i} className="flex items-center gap-3 py-3 px-4"><Skeleton className="h-4 flex-1 max-w-[200px]" /><Skeleton className="h-4 w-16" /><Skeleton className="h-4 w-8" /><Skeleton className="h-4 w-24" /></div>
+                        ))}
+                    </div>
                 ) : rootCategories.length === 0 ? (
-                    <div className="p-8 text-center text-gray-400">No hay categorias creadas</div>
+                    <div className="p-8 text-center text-muted-foreground">No hay categorias creadas</div>
                 ) : (
                     rootCategories.sort((a, b) => a.sort_order - b.sort_order).map(cat => renderCategory(cat, 0))
                 )}

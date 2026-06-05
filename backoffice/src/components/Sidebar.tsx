@@ -101,29 +101,34 @@ export default function Sidebar() {
             {isMobile && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed top-4 left-4 z-50 p-2 bg-white border border-gray-200 rounded-lg shadow-sm lg:hidden"
+                    className="fixed top-4 left-4 z-50 p-2 bg-card border border-border rounded-lg shadow-sm lg:hidden"
                 >
                     <Menu className="h-5 w-5" />
                 </button>
             )}
 
             {isMobile && isOpen && (
-                <div className="fixed inset-0 z-[9998] bg-black/50 lg:hidden" onClick={() => setIsOpen(false)} />
+                <div className="fixed inset-0 z-[9998] bg-foreground/30 backdrop-blur-sm lg:hidden" onClick={() => setIsOpen(false)} />
             )}
 
             <aside className={`${
                 isMobile
-                    ? `fixed left-0 top-0 z-[9999] h-full w-64 transform bg-white border-r border-gray-200 transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
-                    : 'flex h-screen w-64 flex-col border-r border-gray-200 bg-white'
+                    ? `fixed left-0 top-0 z-[9999] h-full w-64 transform bg-card border-r border-border transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
+                    : 'flex h-screen w-64 flex-col border-r border-border bg-card'
             }`}>
-                <div className="flex items-center justify-between border-b border-gray-200 px-5 py-4">
-                    <div>
-                        <h1 className="text-lg font-bold text-primary-600">Inventario</h1>
-                        <p className="text-xs text-gray-500">Sistema de ventas</p>
+                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+                    <div className="flex items-center gap-2.5">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                            <Package className="h-5 w-5" />
+                        </div>
+                        <div>
+                            <h1 className="text-base font-semibold tracking-tight text-foreground">Inventario</h1>
+                            <p className="text-xs text-muted-foreground">Sistema de ventas</p>
+                        </div>
                     </div>
                     {isMobile && (
-                        <button onClick={() => setIsOpen(false)} className="p-1 rounded hover:bg-gray-100">
-                            <X className="h-5 w-5 text-gray-500" />
+                        <button onClick={() => setIsOpen(false)} className="p-1 rounded-md hover:bg-muted">
+                            <X className="h-5 w-5 text-muted-foreground" />
                         </button>
                     )}
                 </div>
@@ -143,16 +148,16 @@ export default function Sidebar() {
                                             onClick={() => toggleGroup(item.href)}
                                             className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                                                 groupActive && !groupOpen
-                                                    ? 'bg-primary-50 text-primary-700 font-medium'
-                                                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                    ? 'bg-primary/10 text-primary font-medium'
+                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                             }`}
                                         >
-                                            <Icon className={`h-[18px] w-[18px] shrink-0 ${groupActive ? 'text-primary-600' : 'text-gray-400'}`} />
+                                            <Icon className={`h-[18px] w-[18px] shrink-0 ${groupActive ? 'text-primary' : 'text-muted-foreground'}`} />
                                             <span className="flex-1 text-left">{item.label}</span>
-                                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${groupOpen ? 'rotate-180' : ''} ${groupActive ? 'text-primary-500' : 'text-gray-400'}`} />
+                                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${groupOpen ? 'rotate-180' : ''} ${groupActive ? 'text-primary' : 'text-muted-foreground'}`} />
                                         </button>
                                         {groupOpen && (
-                                            <ul className="ml-3 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-3">
+                                            <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-border pl-3">
                                                 {item.children.map((child) => {
                                                     const childActive = isActive(child.href)
                                                     const ChildIcon = child.icon
@@ -162,11 +167,11 @@ export default function Sidebar() {
                                                                 href={child.href}
                                                                 className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
                                                                     childActive
-                                                                        ? 'bg-primary-600 text-white font-medium'
-                                                                        : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800'
+                                                                        ? 'bg-primary/10 text-primary font-medium'
+                                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                                                 }`}
                                                             >
-                                                                <ChildIcon className={`h-4 w-4 shrink-0 ${childActive ? 'text-white' : 'text-gray-400'}`} />
+                                                                <ChildIcon className={`h-4 w-4 shrink-0 ${childActive ? 'text-primary' : 'text-muted-foreground'}`} />
                                                                 <span>{child.label}</span>
                                                             </Link>
                                                         </li>
@@ -185,11 +190,11 @@ export default function Sidebar() {
                                         href={item.href}
                                         className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
                                             active
-                                                ? 'bg-primary-600 text-white font-medium'
-                                                : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                                                ? 'bg-primary/10 text-primary font-medium'
+                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
                                         }`}
                                     >
-                                        <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-white' : 'text-gray-400'}`} />
+                                        <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
                                         <span>{item.label}</span>
                                     </Link>
                                 </li>
@@ -198,8 +203,8 @@ export default function Sidebar() {
                     </ul>
                 </nav>
 
-                <div className="border-t border-gray-200 p-3">
-                    <div className="text-center text-xs text-gray-400">Inventario v1.0</div>
+                <div className="border-t border-border p-3">
+                    <div className="text-center text-xs text-muted-foreground">Inventario v1.0</div>
                 </div>
             </aside>
         </>
