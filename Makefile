@@ -15,8 +15,9 @@ ROOT    = docker-compose.yml
 up: .env
 	docker network create net-shared 2>/dev/null || true
 	docker compose -f $(INFRA) up -d
-	docker compose -f $(MICROS) up -d
-	docker compose -f $(ROOT) up -d
+	docker compose -f $(MICROS) up -d --build
+	docker compose -f $(ROOT) up -d --build
+	@echo ">> Listo. El backoffice (Next.js) tarda ~1 min en compilar la primera vez; si ves 504, espera y recarga."
 
 ## .env: si no existe, lo crea a partir del ejemplo
 .env:
