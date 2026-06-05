@@ -55,6 +55,24 @@ const PurchaseOrder = sequelize.define('purchase_orders', {
         type: DataTypes.INTEGER,
         allowNull: true,
     },
+    paid_amount: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: false,
+        defaultValue: 0,
+    },
+    payment_status: {
+        type: DataTypes.ENUM('unpaid', 'partial', 'paid'),
+        allowNull: false,
+        defaultValue: 'unpaid',
+    },
+    supplier_invoice_number: {
+        type: DataTypes.STRING(50),
+        allowNull: true,
+    },
+    supplier_invoice_date: {
+        type: DataTypes.DATEONLY,
+        allowNull: true,
+    },
 }, {
     tableName: 'purchase_orders',
     timestamps: true,

@@ -43,8 +43,23 @@ export async function update(req, res) {
             receipt_next_number: req.body.receipt_next_number ?? 1,
         };
 
+        // Campos opcionales: solo se actualizan si vienen en el body.
+        const optional = [
+            'allow_oversell', 'low_stock_threshold', 'accounting_auto_entries',
+            'acc_sales_account', 'acc_vat_debit_account', 'acc_vat_credit_account',
+            'acc_cash_account', 'acc_receivable_account', 'acc_payable_account',
+            'acc_inventory_account', 'acc_purchases_account',
+        ];
+        for (const key of optional) {
+            if (req.body[key] !== undefined) payload[key] = req.body[key];
+        }
+
         if (!payload.name || !String(payload.name).trim()) {
             return res.status(400).json(errorMessage({ message: 'El nombre del negocio es requerido' }));
+        }
+
+        if (payload.tax_rate_default !== undefined && (Number(payload.tax_rate_default) < 0 || Number(payload.tax_rate_default) > 100)) {
+            return res.status(400).json(errorMessage({ message: 'La tasa de IVA por defecto debe estar entre 0 y 100' }));
         }
 
         let config = await BusinessConfig.findOne();

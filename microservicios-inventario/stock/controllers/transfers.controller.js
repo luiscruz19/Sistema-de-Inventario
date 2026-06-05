@@ -82,6 +82,25 @@ export async function create(req, res) {
     try {
         const { from_branch_id, to_branch_id, items, notes } = req.body;
 
+        if (!from_branch_id || !to_branch_id) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'from_branch_id y to_branch_id son requeridos' }));
+        }
+        if (Number(from_branch_id) === Number(to_branch_id)) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'La sucursal de origen y destino no pueden ser la misma' }));
+        }
+        if (!Array.isArray(items) || items.length === 0) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'La transferencia debe tener al menos un ítem' }));
+        }
+        for (const item of items) {
+            if (!item.product_id || Number(item.quantity) <= 0 || Number.isNaN(Number(item.quantity))) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({ message: 'Cada ítem requiere product_id y una cantidad mayor a 0' }));
+            }
+        }
+
         const transfer = await StockTransfer.create({
             from_branch_id,
             to_branch_id,
@@ -104,9 +123,19 @@ export async function create(req, res) {
                 where: { product_id: item.product_id, variant_id: item.variant_id || null, branch_id: from_branch_id },
                 defaults: { product_id: item.product_id, variant_id: item.variant_id || null, branch_id: from_branch_id, quantity: 0, reserved_quantity: 0 },
                 transaction: t,
+                lock: t.LOCK.UPDATE,
             });
 
             const prevQty = Number(stockRecord.quantity);
+
+            // Validar stock suficiente en origen
+            if (prevQty < Number(item.quantity)) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({
+                    message: `Stock insuficiente en sucursal origen para el producto ${item.product_id}. Disponible: ${prevQty}`
+                }));
+            }
+
             const newQty = prevQty - Number(item.quantity);
             await stockRecord.update({ quantity: newQty }, { transaction: t });
 

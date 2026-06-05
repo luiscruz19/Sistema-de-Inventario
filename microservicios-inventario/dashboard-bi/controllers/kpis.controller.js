@@ -8,8 +8,16 @@ import Product from '../models/Product.js';
 import Stock from '../models/Stock.js';
 import CashRegister from '../models/CashRegister.js';
 import Invoice from '../models/Invoice.js';
+import Supplier from '../models/Supplier.js';
+import SupplierTransaction from '../models/SupplierTransaction.js';
 import { errorMessage, successMessage } from '../utils/messages.js';
 
+function startOfDay(date = new Date()) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 0, 0, 0, 0);
+}
+function endOfDay(date = new Date()) {
+    return new Date(date.getFullYear(), date.getMonth(), date.getDate(), 23, 59, 59, 999);
+}
 function startOfMonth(date = new Date()) {
     return new Date(date.getFullYear(), date.getMonth(), 1);
 }
@@ -323,5 +331,150 @@ export async function invoicesSummary(req, res) {
     } catch (err) {
         console.error('Error invoicesSummary:', err);
         return res.status(500).json(errorMessage({ message: 'Error al calcular resumen de facturas' }));
+    }
+}
+
+/**
+ * GET /kpis/sales-today
+ * Ventas del día (total, cantidad, ticket promedio) y margen bruto del día/mes.
+ */
+export async function salesToday(req, res) {
+    try {
+        const now = new Date();
+        const branchId = req.query.branch_id ? Number(req.query.branch_id) : null;
+
+        const baseWhere = { status: 'completed' };
+        if (branchId) baseWhere.branch_id = branchId;
+
+        const [today] = await Sale.findAll({
+            where: { ...baseWhere, completed_at: { [Op.between]: [startOfDay(now), endOfDay(now)] } },
+            attributes: [
+                [fn('COALESCE', fn('SUM', col('total')), 0), 'total'],
+                [fn('COUNT', col('id')), 'count'],
+            ],
+            raw: true,
+        });
+
+        const [month] = await Sale.findAll({
+            where: { ...baseWhere, completed_at: { [Op.between]: [startOfMonth(now), endOfMonth(now)] } },
+            attributes: [
+                [fn('COALESCE', fn('SUM', col('total')), 0), 'total'],
+                [fn('COUNT', col('id')), 'count'],
+            ],
+            raw: true,
+        });
+
+        // Margen bruto del mes: ingresos por ítem - costo al momento de la venta.
+        const saleWhere = { status: 'completed', completed_at: { [Op.between]: [startOfMonth(now), endOfMonth(now)] } };
+        if (branchId) saleWhere.branch_id = branchId;
+
+        const [marginRow] = await SaleItem.findAll({
+            attributes: [
+                [fn('COALESCE', fn('SUM', col('sale_items.subtotal')), 0), 'revenue'],
+                [fn('COALESCE', fn('SUM', literal('sale_items.cost_at_sale * sale_items.quantity')), 0), 'cost'],
+            ],
+            include: [{ model: Sale, as: 'sale', attributes: [], where: saleWhere, required: true }],
+            raw: true,
+        });
+
+        const monthRevenue = Number(marginRow?.revenue || 0);
+        const monthCost = Number(marginRow?.cost || 0);
+        const grossMargin = Number((monthRevenue - monthCost).toFixed(2));
+        const marginPct = monthRevenue > 0 ? Number(((grossMargin / monthRevenue) * 100).toFixed(2)) : null;
+
+        const todayTotal = Number(today?.total || 0);
+        const todayCount = Number(today?.count || 0);
+
+        return res.status(200).json(successMessage({
+            message: 'Ventas del día',
+            extra: {
+                data: {
+                    today: {
+                        total: Number(todayTotal.toFixed(2)),
+                        count: todayCount,
+                        average_ticket: todayCount > 0 ? Number((todayTotal / todayCount).toFixed(2)) : 0,
+                    },
+                    month: {
+                        total: Number(Number(month?.total || 0).toFixed(2)),
+                        count: Number(month?.count || 0),
+                        revenue_net: monthRevenue,
+                        cost: monthCost,
+                        gross_margin: grossMargin,
+                        margin_percentage: marginPct,
+                    },
+                },
+            },
+        }));
+    } catch (err) {
+        console.error('Error salesToday:', err);
+        return res.status(500).json(errorMessage({ message: 'Error al calcular ventas del día' }));
+    }
+}
+
+/**
+ * GET /kpis/payables-aging
+ * Cuentas por pagar: proveedores con saldo > 0, con aging según última deuda registrada.
+ */
+export async function payablesAging(req, res) {
+    try {
+        const now = Date.now();
+
+        const suppliers = await Supplier.findAll({
+            attributes: ['id', 'name', 'tax_id', 'balance'],
+            where: { balance: { [Op.gt]: 0 } },
+            include: [{
+                model: SupplierTransaction,
+                as: 'transactions',
+                required: false,
+                attributes: ['id', 'type', 'createdAt'],
+            }],
+        });
+
+        const buckets = { '0-30': 0, '31-60': 0, '61-90': 0, '90+': 0 };
+        const rows = [];
+
+        for (const supplier of suppliers) {
+            const balance = Number(supplier.balance || 0);
+            if (balance <= 0) continue;
+
+            const credits = (supplier.transactions || [])
+                .filter((tx) => tx.type === 'credit')
+                .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+            const oldest = credits[0];
+            const ageDays = oldest
+                ? Math.max(0, Math.floor((now - new Date(oldest.createdAt).getTime()) / (1000 * 60 * 60 * 24)))
+                : 0;
+
+            let bucket = '0-30';
+            if (ageDays > 90) bucket = '90+';
+            else if (ageDays > 60) bucket = '61-90';
+            else if (ageDays > 30) bucket = '31-60';
+
+            buckets[bucket] += balance;
+            rows.push({
+                supplier_id: supplier.id,
+                supplier_name: supplier.name,
+                tax_id: supplier.tax_id,
+                balance,
+                age_days: ageDays,
+                bucket,
+            });
+        }
+
+        const total = Object.values(buckets).reduce((a, b) => a + b, 0);
+
+        return res.status(200).json(successMessage({
+            message: 'Cuentas por pagar por aging',
+            extra: {
+                data: {
+                    total: Number(total.toFixed(2)),
+                    buckets: Object.fromEntries(Object.entries(buckets).map(([k, v]) => [k, Number(v.toFixed(2))])),
+                    suppliers: rows.sort((a, b) => b.balance - a.balance),
+                },
+            },
+        }));
+    } catch (err) {
+        console.error('Error payablesAging:', err);
+        return res.status(500).json(errorMessage({ message: 'Error al calcular cuentas por pagar' }));
     }
 }

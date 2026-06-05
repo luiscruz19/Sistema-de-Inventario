@@ -5,6 +5,7 @@ import * as suppliersCtrl from '../controllers/suppliers.controller.js';
 import * as purchaseOrdersCtrl from '../controllers/purchase-orders.controller.js';
 import * as customersCtrl from '../controllers/customers.controller.js';
 import * as customerTxCtrl from '../controllers/customer-transactions.controller.js';
+import * as supplierTxCtrl from '../controllers/supplier-transactions.controller.js';
 import { listByUser, provision, searchByUserId } from '../controllers/administrators.controller.js';
 
 const api = Router();
@@ -24,6 +25,10 @@ api.put('/suppliers/:id', validateToken, suppliersCtrl.update);
 api.delete('/suppliers/:id', validateToken, suppliersCtrl.remove);
 api.patch('/suppliers/:id/toggle', validateToken, suppliersCtrl.toggle);
 
+// Cuenta corriente del proveedor (cuentas a pagar)
+api.get('/suppliers/:id/transactions', validateToken, supplierTxCtrl.list);
+api.post('/suppliers/:id/transactions', validateToken, supplierTxCtrl.create);
+
 // Purchase Orders
 api.get('/purchase-orders', validateToken, purchaseOrdersCtrl.list);
 api.get('/purchase-orders/:id', validateToken, purchaseOrdersCtrl.getById);
@@ -31,6 +36,7 @@ api.post('/purchase-orders', validateToken, purchaseOrdersCtrl.create);
 api.put('/purchase-orders/:id', validateToken, purchaseOrdersCtrl.updateStatus);
 api.patch('/purchase-orders/:id/send', validateToken, purchaseOrdersCtrl.send);
 api.patch('/purchase-orders/:id/receive', validateToken, purchaseOrdersCtrl.receive);
+api.patch('/purchase-orders/:id/pay', validateToken, purchaseOrdersCtrl.pay);
 api.patch('/purchase-orders/:id/cancel', validateToken, purchaseOrdersCtrl.cancel);
 
 // Customers

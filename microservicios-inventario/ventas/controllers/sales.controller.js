@@ -6,12 +6,14 @@ import ProductVariant from '../models/ProductVariant.js';
 import Stock from '../models/Stock.js';
 import StockMovement from '../models/StockMovement.js';
 import Customer from '../models/Customer.js';
+import CustomerTransaction from '../models/CustomerTransaction.js';
 import Branch from '../models/Branch.js';
 import BusinessConfig from '../models/BusinessConfig.js';
 import sequelize from '../db/sequelize.js';
 import { Op } from 'sequelize';
 import { errorMessage, successMessage } from '../utils/messages.js';
 import messages from '../config/messages.js';
+import { generateSaleEntry } from '../utils/accounting.js';
 
 /**
  * Listar ventas con filtros
@@ -115,9 +117,50 @@ export async function create(req, res) {
             payment_method, discount_percentage, discount_amount, notes,
         } = req.body;
 
-        if (!items || items.length === 0) {
+        if (!Array.isArray(items) || items.length === 0) {
             await t.rollback();
             return res.status(400).json(errorMessage({ message: messages.entities.sale.errors.emptyItems }));
+        }
+
+        if (!branch_id) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'branch_id es requerido' }));
+        }
+
+        const branch = await Branch.findByPk(branch_id, { transaction: t });
+        if (!branch) {
+            await t.rollback();
+            return res.status(404).json(errorMessage({ message: 'Sucursal no encontrada' }));
+        }
+
+        // Validar cantidades antes de procesar
+        for (const item of items) {
+            if (!item.product_id || Number(item.quantity) <= 0 || Number.isNaN(Number(item.quantity))) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({ message: 'Cada ítem requiere product_id y una cantidad mayor a 0' }));
+            }
+            const itemDisc = Number(item.discount_percentage || 0);
+            if (itemDisc < 0 || itemDisc > 100) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({ message: 'El descuento por ítem debe estar entre 0 y 100%' }));
+            }
+        }
+
+        // Determinar si es venta a cuenta corriente (crédito): requiere cliente
+        const effectiveMethod = payment_method || (payments && payments.length > 1 ? 'mixed' : payments?.[0]?.method || 'cash');
+        const isOnAccount = effectiveMethod === 'credit';
+        if (isOnAccount && !customer_id) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'Las ventas a cuenta corriente requieren un cliente' }));
+        }
+
+        let customer = null;
+        if (customer_id) {
+            customer = await Customer.findByPk(customer_id, { transaction: t, lock: t.LOCK.UPDATE });
+            if (!customer) {
+                await t.rollback();
+                return res.status(404).json(errorMessage({ message: 'Cliente no encontrado' }));
+            }
         }
 
         // Generar número de venta de forma atómica para evitar duplicados con POS concurrentes
@@ -137,13 +180,17 @@ export async function create(req, res) {
 
         // Procesar items: validar stock, calcular subtotales
         for (const item of items) {
-            const product = await Product.findOne({ where: { id: item.product_id } });
+            const product = await Product.findOne({ where: { id: item.product_id }, transaction: t });
             if (!product) {
                 await t.rollback();
                 return res.status(404).json(errorMessage({ message: `Producto ID ${item.product_id} no encontrado` }));
             }
+            if (product.active === false) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({ message: `El producto ${product.name} está inactivo y no puede venderse` }));
+            }
 
-            const variant = item.variant_id ? await ProductVariant.findByPk(item.variant_id) : null;
+            const variant = item.variant_id ? await ProductVariant.findByPk(item.variant_id, { transaction: t }) : null;
             const unitPrice = item.unit_price || Number(variant?.sale_price || product.sale_price);
             const costPrice = Number(variant?.cost_price || product.cost_price);
             const itemDiscount = item.discount_percentage || 0;
@@ -170,6 +217,7 @@ export async function create(req, res) {
                     where: { product_id: product.id, variant_id: item.variant_id || null, branch_id },
                     defaults: { product_id: product.id, variant_id: item.variant_id || null, branch_id, quantity: 0, reserved_quantity: 0 },
                     transaction: t,
+                    lock: t.LOCK.UPDATE,
                 });
 
                 const prevQty = Number(stockRecord.quantity);
@@ -216,21 +264,42 @@ export async function create(req, res) {
         }
         const total = Number((subtotal - discountAmount + taxAmount).toFixed(2));
 
-        // Calcular pagos
+        if (total <= 0) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'El total de la venta debe ser mayor a 0' }));
+        }
+
+        // Calcular y validar pagos
         let paidAmount = 0;
-        if (payments && payments.length > 0) {
+        if (isOnAccount) {
+            // Venta a cuenta corriente: no se cobra al contado, queda como deuda del cliente.
+            paidAmount = 0;
+        } else if (payments && payments.length > 0) {
+            for (const p of payments) {
+                if (!p.method || Number(p.amount) <= 0 || Number.isNaN(Number(p.amount))) {
+                    await t.rollback();
+                    return res.status(400).json(errorMessage({ message: 'Cada pago requiere un método y un monto mayor a 0' }));
+                }
+            }
             paidAmount = payments.reduce((sum, p) => sum + Number(p.amount), 0);
+            if (Number(paidAmount.toFixed(2)) < total - 0.01) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({
+                    message: `El total pagado (${paidAmount.toFixed(2)}) es menor al total de la venta (${total.toFixed(2)})`
+                }));
+            }
         } else {
             paidAmount = total;
         }
-        const changeAmount = Math.max(0, Number((paidAmount - total).toFixed(2)));
+        // El vuelto solo aplica a pagos en efectivo; en cuenta corriente no hay vuelto.
+        const changeAmount = isOnAccount ? 0 : Math.max(0, Number((paidAmount - total).toFixed(2)));
 
         // Crear la venta
         const sale = await Sale.create({
             branch_id,
             customer_id: customer_id || null,
             sale_number: saleNumber,
-            payment_method: payment_method || (payments && payments.length > 1 ? 'mixed' : payments?.[0]?.method || 'cash'),
+            payment_method: effectiveMethod,
             status: 'completed',
             subtotal: Number(subtotal.toFixed(2)),
             discount_amount: Number(discountAmount.toFixed(2)),
@@ -255,22 +324,47 @@ export async function create(req, res) {
             { where: { reference_type: 'sale', reference_id: null, created_by: req.user?.id || null }, transaction: t }
         );
 
-        // Crear sale_payments
-        if (payments && payments.length > 0) {
-            for (const payment of payments) {
+        // Crear sale_payments (las ventas a cuenta corriente no registran cobro)
+        if (!isOnAccount) {
+            if (payments && payments.length > 0) {
+                for (const payment of payments) {
+                    await SalePayment.create({
+                        sale_id: sale.id,
+                        method: payment.method,
+                        amount: Number(payment.amount),
+                        reference: payment.reference || null,
+                    }, { transaction: t });
+                }
+            } else {
                 await SalePayment.create({
                     sale_id: sale.id,
-                    method: payment.method,
-                    amount: Number(payment.amount),
-                    reference: payment.reference || null,
+                    method: 'cash',
+                    amount: paidAmount,
                 }, { transaction: t });
             }
-        } else {
-            await SalePayment.create({
-                sale_id: sale.id,
-                method: 'cash',
-                amount: paidAmount,
+        }
+
+        // Venta a cuenta corriente: impactar saldo del cliente y registrar movimiento.
+        if (isOnAccount && customer) {
+            const newBalance = Number((Number(customer.balance) + total).toFixed(2));
+            await customer.update({ balance: newBalance }, { transaction: t });
+            await CustomerTransaction.create({
+                customer_id: customer.id,
+                type: 'debit',
+                amount: total,
+                description: `Venta a cuenta corriente ${saleNumber}`,
+                reference_type: 'sale',
+                reference_id: sale.id,
+                balance_after: newBalance,
+                created_by: req.user?.id || null,
             }, { transaction: t });
+        }
+
+        // Asiento contable automático (si está configurado). No bloquea la venta si falla por config.
+        try {
+            await generateSaleEntry({ sale: sale.toJSON(), onAccount: isOnAccount, transaction: t });
+        } catch (accErr) {
+            console.error('Error generando asiento de venta (se omite):', accErr.message);
         }
 
         // El número de comprobante ya fue incrementado de forma atómica al inicio
@@ -296,6 +390,8 @@ export async function cancel(req, res) {
         const sale = await Sale.findOne({
             where: { id: req.params.id },
             include: [{ model: SaleItem, as: 'items' }],
+            transaction: t,
+            lock: t.LOCK.UPDATE,
         });
 
         if (!sale) {
@@ -306,10 +402,14 @@ export async function cancel(req, res) {
             await t.rollback();
             return res.status(400).json(errorMessage({ message: messages.entities.sale.errors.alreadyCancelled }));
         }
+        if (sale.status === 'refunded') {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'La venta ya fue reembolsada y no puede cancelarse' }));
+        }
 
         // Devolver stock
         for (const item of sale.items) {
-            const product = await Product.findByPk(item.product_id);
+            const product = await Product.findByPk(item.product_id, { transaction: t });
             if (product?.track_stock) {
                 const stockRecord = await Stock.findOne({
                     where: { product_id: item.product_id, variant_id: item.variant_id, branch_id: sale.branch_id },
@@ -335,6 +435,25 @@ export async function cancel(req, res) {
                         created_by: req.user?.id || null,
                     }, { transaction: t });
                 }
+            }
+        }
+
+        // Revertir saldo de cuenta corriente si fue una venta a crédito.
+        if (sale.payment_method === 'credit' && sale.customer_id) {
+            const customer = await Customer.findByPk(sale.customer_id, { transaction: t, lock: t.LOCK.UPDATE });
+            if (customer) {
+                const newBalance = Number((Number(customer.balance) - Number(sale.total)).toFixed(2));
+                await customer.update({ balance: newBalance }, { transaction: t });
+                await CustomerTransaction.create({
+                    customer_id: customer.id,
+                    type: 'credit',
+                    amount: Number(sale.total),
+                    description: `Anulación de venta ${sale.sale_number}`,
+                    reference_type: 'sale',
+                    reference_id: sale.id,
+                    balance_after: newBalance,
+                    created_by: req.user?.id || null,
+                }, { transaction: t });
             }
         }
 

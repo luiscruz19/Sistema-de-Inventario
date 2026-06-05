@@ -1,10 +1,47 @@
 import CashRegister from '../models/CashRegister.js';
+import CashMovement from '../models/CashMovement.js';
 import Sale from '../models/Sale.js';
 import SalePayment from '../models/SalePayment.js';
 import Branch from '../models/Branch.js';
 import { Op } from 'sequelize';
 import { errorMessage, successMessage } from '../utils/messages.js';
 import messages from '../config/messages.js';
+
+/**
+ * Calcula el efectivo esperado en una caja: apertura + ventas en efectivo del turno
+ * + ingresos manuales - egresos manuales.
+ */
+async function computeExpectedCash(cashRegister) {
+    const cashSales = await SalePayment.findAll({
+        where: { method: 'cash' },
+        include: [{
+            model: Sale, as: 'sale',
+            where: {
+                branch_id: cashRegister.branch_id,
+                status: 'completed',
+                completed_at: { [Op.between]: [cashRegister.opened_at, new Date()] },
+            },
+            attributes: [],
+        }],
+    });
+    const cashIncome = cashSales.reduce((sum, p) => sum + Number(p.amount), 0);
+
+    const movements = await CashMovement.findAll({ where: { cash_register_id: cashRegister.id } });
+    const manualIncome = movements
+        .filter((m) => m.type === 'income')
+        .reduce((sum, m) => sum + Number(m.amount), 0);
+    const manualExpense = movements
+        .filter((m) => m.type === 'expense')
+        .reduce((sum, m) => sum + Number(m.amount), 0);
+
+    const expected = Number(cashRegister.opening_amount) + cashIncome + manualIncome - manualExpense;
+    return {
+        cashIncome: Number(cashIncome.toFixed(2)),
+        manualIncome: Number(manualIncome.toFixed(2)),
+        manualExpense: Number(manualExpense.toFixed(2)),
+        expected: Number(expected.toFixed(2)),
+    };
+}
 
 /**
  * Listar cajas (historial)
@@ -97,24 +134,12 @@ export async function close(req, res) {
             return res.status(400).json(errorMessage({ message: messages.entities.cashRegister.errors.alreadyClosed }));
         }
 
-        // Calcular ventas en efectivo durante el turno de caja
-        const cashSales = await SalePayment.findAll({
-            where: {
-                method: 'cash',
-            },
-            include: [{
-                model: Sale, as: 'sale',
-                where: {
-                    branch_id: cashRegister.branch_id,
-                    status: 'completed',
-                    completed_at: { [Op.between]: [cashRegister.opened_at, new Date()] },
-                },
-                attributes: [],
-            }],
-        });
+        if (closing_amount === undefined || Number.isNaN(Number(closing_amount))) {
+            return res.status(400).json(errorMessage({ message: 'closing_amount es requerido' }));
+        }
 
-        const cashIncome = cashSales.reduce((sum, p) => sum + Number(p.amount), 0);
-        const expectedAmount = Number(cashRegister.opening_amount) + cashIncome;
+        // Calcular efectivo esperado: apertura + ventas en efectivo + movimientos manuales
+        const { expected: expectedAmount } = await computeExpectedCash(cashRegister);
         const difference = Number(closing_amount) - expectedAmount;
 
         await cashRegister.update({
@@ -180,21 +205,11 @@ export async function closeByBranch(req, res) {
             return res.status(400).json(errorMessage({ message: messages.entities.cashRegister.errors.alreadyClosed }));
         }
 
-        const cashSales = await SalePayment.findAll({
-            where: { method: 'cash' },
-            include: [{
-                model: Sale, as: 'sale',
-                where: {
-                    branch_id: cashRegister.branch_id,
-                    status: 'completed',
-                    completed_at: { [Op.between]: [cashRegister.opened_at, new Date()] },
-                },
-                attributes: [],
-            }],
-        });
+        if (closing_amount === undefined || Number.isNaN(Number(closing_amount))) {
+            return res.status(400).json(errorMessage({ message: 'closing_amount es requerido' }));
+        }
 
-        const cashIncome = cashSales.reduce((sum, p) => sum + Number(p.amount), 0);
-        const expectedAmount = Number(cashRegister.opening_amount) + cashIncome;
+        const { expected: expectedAmount } = await computeExpectedCash(cashRegister);
         const difference = Number(closing_amount) - expectedAmount;
 
         await cashRegister.update({
@@ -212,6 +227,91 @@ export async function closeByBranch(req, res) {
         }));
     } catch (error) {
         console.error('Error closing cash register by branch:', error);
+        return res.status(500).json(errorMessage({ message: messages.system.common.errors.unexpected }));
+    }
+}
+
+/**
+ * Registrar un movimiento de caja (ingreso/egreso de efectivo) sobre la caja abierta.
+ */
+export async function addMovement(req, res) {
+    try {
+        const { id } = req.params;
+        const { type, amount, concept, reference } = req.body;
+
+        if (!['income', 'expense'].includes(type)) {
+            return res.status(400).json(errorMessage({ message: 'type debe ser "income" o "expense"' }));
+        }
+        if (!amount || Number(amount) <= 0 || Number.isNaN(Number(amount))) {
+            return res.status(400).json(errorMessage({ message: 'El monto debe ser mayor a 0' }));
+        }
+        if (!concept?.trim()) {
+            return res.status(400).json(errorMessage({ message: 'El concepto es requerido' }));
+        }
+
+        const cashRegister = await CashRegister.findOne({ where: { id } });
+        if (!cashRegister) {
+            return res.status(404).json(errorMessage({ message: messages.entities.cashRegister.errors.notFound }));
+        }
+        if (cashRegister.status !== 'open') {
+            return res.status(400).json(errorMessage({ message: 'No se pueden registrar movimientos sobre una caja cerrada' }));
+        }
+
+        const movement = await CashMovement.create({
+            cash_register_id: cashRegister.id,
+            type,
+            amount: Number(amount),
+            concept: concept.trim(),
+            reference: reference || null,
+            created_by: req.user?.id || null,
+        });
+
+        return res.status(201).json(successMessage({
+            message: 'Movimiento de caja registrado',
+            extra: { data: movement },
+        }));
+    } catch (error) {
+        console.error('Error adding cash movement:', error);
+        return res.status(500).json(errorMessage({ message: messages.system.common.errors.unexpected }));
+    }
+}
+
+/**
+ * Arqueo en vivo de una caja: detalle de efectivo esperado y movimientos.
+ */
+export async function getSummary(req, res) {
+    try {
+        const { id } = req.params;
+        const cashRegister = await CashRegister.findOne({
+            where: { id },
+            include: [{ model: Branch, as: 'branch', attributes: ['id', 'name'] }],
+        });
+        if (!cashRegister) {
+            return res.status(404).json(errorMessage({ message: messages.entities.cashRegister.errors.notFound }));
+        }
+
+        const breakdown = await computeExpectedCash(cashRegister);
+        const movements = await CashMovement.findAll({
+            where: { cash_register_id: cashRegister.id },
+            order: [['createdAt', 'DESC']],
+        });
+
+        return res.status(200).json(successMessage({
+            message: 'Arqueo de caja',
+            extra: {
+                data: {
+                    cash_register: cashRegister,
+                    opening_amount: Number(cashRegister.opening_amount),
+                    cash_sales: breakdown.cashIncome,
+                    manual_income: breakdown.manualIncome,
+                    manual_expense: breakdown.manualExpense,
+                    expected_cash: breakdown.expected,
+                    movements,
+                },
+            },
+        }));
+    } catch (error) {
+        console.error('Error getting cash register summary:', error);
         return res.status(500).json(errorMessage({ message: messages.system.common.errors.unexpected }));
     }
 }

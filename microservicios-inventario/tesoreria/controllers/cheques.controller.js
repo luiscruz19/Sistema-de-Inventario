@@ -1,9 +1,48 @@
 import Cheque from '../models/Cheque.js';
 import BankAccount from '../models/BankAccount.js';
+import BankMovement from '../models/BankMovement.js';
 import Customer from '../models/Customer.js';
 import Supplier from '../models/Supplier.js';
+import sequelize from '../db/sequelize.js';
 import { errorMessage, successMessage } from '../utils/messages.js';
 import { Op } from 'sequelize';
+
+/**
+ * Registra un movimiento bancario por la acreditación/débito de un cheque
+ * sobre la cuenta bancaria asociada, calculando el saldo resultante.
+ */
+async function registerChequeBankMovement(cheque, t) {
+    if (!cheque.bank_account_id) return null;
+
+    const account = await BankAccount.findByPk(cheque.bank_account_id, { transaction: t });
+    if (!account) return null;
+
+    // Cheque recibido cobrado = ingreso; cheque emitido cobrado/debitado = egreso.
+    const tipo = cheque.tipo === 'recibido' ? 'ingreso' : 'egreso';
+
+    const lastMovement = await BankMovement.findOne({
+        where: { bank_account_id: cheque.bank_account_id },
+        order: [['fecha', 'DESC'], ['id', 'DESC']],
+        transaction: t,
+    });
+    const baseSaldo = lastMovement?.saldo_resultante != null
+        ? Number(lastMovement.saldo_resultante)
+        : Number(account.saldo_inicial || 0);
+    const saldo_resultante = tipo === 'ingreso'
+        ? baseSaldo + Number(cheque.monto)
+        : baseSaldo - Number(cheque.monto);
+
+    return BankMovement.create({
+        bank_account_id: cheque.bank_account_id,
+        fecha: new Date().toISOString().slice(0, 10),
+        concepto: `Cheque ${cheque.numero} - ${cheque.banco}`,
+        tipo,
+        monto: Number(cheque.monto),
+        saldo_resultante: Number(saldo_resultante.toFixed(2)),
+        referencia: `cheque:${cheque.id}`,
+        conciliado: false,
+    }, { transaction: t });
+}
 
 /**
  * Listar cheques con filtros
@@ -157,15 +196,47 @@ export async function update(req, res) {
 }
 
 /**
- * Cobrar cheque — cambia estado a cobrado
+ * Depositar cheque — cambia estado en_cartera -> depositado
  */
-export async function cobrar(req, res) {
+export async function depositar(req, res) {
     try {
         const cheque = await Cheque.findOne({ where: { id: req.params.id } });
         if (!cheque) return res.status(404).json(errorMessage({ message: 'Cheque no encontrado' }));
 
+        if (cheque.estado !== 'en_cartera') {
+            return res.status(409).json(errorMessage({ message: `Solo se puede depositar un cheque en cartera (estado actual: ${cheque.estado})` }));
+        }
+
+        const { bank_account_id, observaciones } = req.body;
+
+        await cheque.update({
+            estado: 'depositado',
+            ...(bank_account_id && { bank_account_id }),
+            ...(observaciones && { observaciones }),
+        });
+
+        return res.status(200).json(successMessage({ data: cheque, message: 'Cheque marcado como depositado' }));
+    } catch (error) {
+        console.error('cheques depositar error:', error);
+        return res.status(500).json(errorMessage({ message: 'Error al depositar cheque' }));
+    }
+}
+
+/**
+ * Cobrar cheque — cambia estado a cobrado y genera el movimiento bancario asociado.
+ */
+export async function cobrar(req, res) {
+    const t = await sequelize.transaction();
+    try {
+        const cheque = await Cheque.findOne({ where: { id: req.params.id }, transaction: t, lock: t.LOCK.UPDATE });
+        if (!cheque) {
+            await t.rollback();
+            return res.status(404).json(errorMessage({ message: 'Cheque no encontrado' }));
+        }
+
         const estadosValidos = ['en_cartera', 'depositado'];
         if (!estadosValidos.includes(cheque.estado)) {
+            await t.rollback();
             return res.status(409).json(errorMessage({ message: `No se puede cobrar un cheque en estado ${cheque.estado}` }));
         }
 
@@ -174,12 +245,39 @@ export async function cobrar(req, res) {
         await cheque.update({
             estado: 'cobrado',
             ...(observaciones && { observaciones }),
-        });
+        }, { transaction: t });
+
+        await registerChequeBankMovement(cheque, t);
+
+        await t.commit();
 
         return res.status(200).json(successMessage({ data: cheque, message: 'Cheque marcado como cobrado' }));
     } catch (error) {
+        await t.rollback();
         console.error('cheques cobrar error:', error);
         return res.status(500).json(errorMessage({ message: 'Error al cobrar cheque' }));
+    }
+}
+
+/**
+ * Anular cheque — cambia estado a anulado (no puede estar ya cobrado).
+ */
+export async function anular(req, res) {
+    try {
+        const cheque = await Cheque.findOne({ where: { id: req.params.id } });
+        if (!cheque) return res.status(404).json(errorMessage({ message: 'Cheque no encontrado' }));
+
+        if (['cobrado', 'anulado'].includes(cheque.estado)) {
+            return res.status(409).json(errorMessage({ message: `No se puede anular un cheque en estado ${cheque.estado}` }));
+        }
+
+        const { observaciones } = req.body;
+        await cheque.update({ estado: 'anulado', ...(observaciones && { observaciones }) });
+
+        return res.status(200).json(successMessage({ data: cheque, message: 'Cheque anulado' }));
+    } catch (error) {
+        console.error('cheques anular error:', error);
+        return res.status(500).json(errorMessage({ message: 'Error al anular cheque' }));
     }
 }
 

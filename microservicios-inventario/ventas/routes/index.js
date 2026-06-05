@@ -28,6 +28,8 @@ api.get('/cash-register', validateToken, cashRegisterCtrl.list);
 api.get('/cash-register/current', validateToken, cashRegisterCtrl.getCurrent);
 api.post('/cash-register/open', validateToken, cashRegisterCtrl.open);
 api.post('/cash-register/close', validateToken, cashRegisterCtrl.closeByBranch);
+api.get('/cash-register/:id/summary', validateToken, cashRegisterCtrl.getSummary);
+api.post('/cash-register/:id/movements', validateToken, cashRegisterCtrl.addMovement);
 api.patch('/cash-register/:id/close', validateToken, cashRegisterCtrl.close);
 
 // Credit Notes (Notas de crédito/devoluciones)

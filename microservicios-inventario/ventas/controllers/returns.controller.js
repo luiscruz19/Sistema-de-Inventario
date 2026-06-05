@@ -100,8 +100,16 @@ export async function create(req, res) {
             return res.status(404).json(errorMessage({ message: 'Venta no encontrada' }));
         }
 
-        // Generar número RMA
-        const count = await ReturnRequest.count();
+        // Validar items antes de crear
+        for (const item of items) {
+            if (!item.product_id || Number(item.cantidad) <= 0 || Number.isNaN(Number(item.cantidad))) {
+                await t.rollback();
+                return res.status(400).json(errorMessage({ message: 'Cada ítem requiere product_id y una cantidad mayor a 0' }));
+            }
+        }
+
+        // Generar número RMA de forma atómica
+        const count = await ReturnRequest.count({ transaction: t });
         const numero_rma = `RMA-${String(count + 1).padStart(5, '0')}`;
 
         const returnRequest = await ReturnRequest.create({
@@ -113,55 +121,23 @@ export async function create(req, res) {
             observaciones: observaciones || null,
         }, { transaction: t });
 
-        // Crear items y actualizar stock si corresponde
+        // Solo se registran los items. El stock se reingresa al PROCESAR el RMA
+        // (estado procesada), nunca al crearlo, para no devolver stock de RMAs sin aprobar.
         for (const item of items) {
             const { product_id, variant_id, cantidad, precio_unitario, motivo: itemMotivo, reingresa_stock = true } = item;
-            const subtotal = Number(cantidad) * Number(precio_unitario);
+            const subtotal = Number(cantidad) * Number(precio_unitario || 0);
 
             await ReturnRequestItem.create({
                 return_request_id: returnRequest.id,
                 product_id,
                 variant_id: variant_id || null,
                 cantidad: Number(cantidad),
-                precio_unitario: Number(precio_unitario),
+                precio_unitario: Number(precio_unitario || 0),
                 subtotal,
                 motivo: itemMotivo || null,
                 reingresa_stock: Boolean(reingresa_stock),
+                stock_reingresado: false,
             }, { transaction: t });
-
-            if (reingresa_stock) {
-                const product = await Product.findByPk(product_id);
-                if (product?.track_stock) {
-                    const stockRecord = await Stock.findOne({
-                        where: {
-                            product_id,
-                            variant_id: variant_id || null,
-                            branch_id: sale.branch_id,
-                        },
-                        transaction: t,
-                    });
-
-                    if (stockRecord) {
-                        const prevQty = Number(stockRecord.quantity);
-                        const newQty = prevQty + Number(cantidad);
-                        await stockRecord.update({ quantity: newQty }, { transaction: t });
-
-                        await StockMovement.create({
-                            product_id,
-                            variant_id: variant_id || null,
-                            branch_id: sale.branch_id,
-                            type: 'return',
-                            quantity: Number(cantidad),
-                            previous_stock: prevQty,
-                            new_stock: newQty,
-                            reference_type: 'return_request',
-                            reference_id: returnRequest.id,
-                            notes: `RMA ${numero_rma} - ${motivo}`,
-                            created_by: req.user?.id || null,
-                        }, { transaction: t });
-                    }
-                }
-            }
         }
 
         await t.commit();
@@ -232,23 +208,78 @@ export async function reject(req, res) {
  * Completar/procesar devolución
  */
 export async function complete(req, res) {
+    const t = await sequelize.transaction();
     try {
-        const returnRequest = await ReturnRequest.findOne({ where: { id: req.params.id } });
-        if (!returnRequest) return res.status(404).json(errorMessage({ message: 'Devolución no encontrada' }));
+        const returnRequest = await ReturnRequest.findOne({
+            where: { id: req.params.id },
+            include: [
+                { model: Sale, as: 'sale', attributes: ['id', 'branch_id'] },
+                { model: ReturnRequestItem, as: 'items' },
+            ],
+            transaction: t,
+            lock: t.LOCK.UPDATE,
+        });
+        if (!returnRequest) {
+            await t.rollback();
+            return res.status(404).json(errorMessage({ message: 'Devolución no encontrada' }));
+        }
         if (returnRequest.estado !== 'aprobada') {
+            await t.rollback();
             return res.status(409).json(errorMessage({ message: `La devolución debe estar aprobada para procesarla (estado actual: ${returnRequest.estado})` }));
         }
 
         const { nota_credito_id, observaciones } = req.body;
+        const branch_id = returnRequest.sale?.branch_id;
+
+        // Reingresar stock de los items marcados, evitando doble reingreso.
+        for (const item of returnRequest.items || []) {
+            if (!item.reingresa_stock || item.stock_reingresado) continue;
+
+            const product = await Product.findByPk(item.product_id, { transaction: t });
+            if (!product?.track_stock || !branch_id) {
+                await item.update({ stock_reingresado: true }, { transaction: t });
+                continue;
+            }
+
+            const [stockRecord] = await Stock.findOrCreate({
+                where: { product_id: item.product_id, variant_id: item.variant_id || null, branch_id },
+                defaults: { product_id: item.product_id, variant_id: item.variant_id || null, branch_id, quantity: 0, reserved_quantity: 0 },
+                transaction: t,
+                lock: t.LOCK.UPDATE,
+            });
+
+            const prevQty = Number(stockRecord.quantity);
+            const newQty = prevQty + Number(item.cantidad);
+            await stockRecord.update({ quantity: newQty }, { transaction: t });
+
+            await StockMovement.create({
+                product_id: item.product_id,
+                variant_id: item.variant_id || null,
+                branch_id,
+                type: 'return',
+                quantity: Number(item.cantidad),
+                previous_stock: prevQty,
+                new_stock: newQty,
+                reference_type: 'return_request',
+                reference_id: returnRequest.id,
+                notes: `RMA ${returnRequest.numero_rma} - reingreso por devolución`,
+                created_by: req.user?.id || req.admin?.id || null,
+            }, { transaction: t });
+
+            await item.update({ stock_reingresado: true }, { transaction: t });
+        }
 
         await returnRequest.update({
             estado: 'procesada',
             ...(nota_credito_id && { nota_credito_id }),
             ...(observaciones && { observaciones }),
-        });
+        }, { transaction: t });
+
+        await t.commit();
 
         return res.status(200).json(successMessage({ data: returnRequest, message: 'Devolución procesada correctamente' }));
     } catch (error) {
+        await t.rollback();
         console.error('returns complete error:', error);
         return res.status(500).json(errorMessage({ message: 'Error al completar devolución' }));
     }

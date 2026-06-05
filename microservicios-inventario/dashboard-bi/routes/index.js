@@ -5,7 +5,9 @@ import * as kpisCtrl from '../controllers/kpis.controller.js';
 const api = Router();
 
 api.get('/kpis/sales-vs-prev-month', validateToken, kpisCtrl.salesVsPrevMonth);
+api.get('/kpis/sales-today', validateToken, kpisCtrl.salesToday);
 api.get('/kpis/receivables-aging', validateToken, kpisCtrl.receivablesAging);
+api.get('/kpis/payables-aging', validateToken, kpisCtrl.payablesAging);
 api.get('/kpis/top-customers', validateToken, kpisCtrl.topCustomers);
 api.get('/kpis/top-products', validateToken, kpisCtrl.topProducts);
 api.get('/kpis/available-cash', validateToken, kpisCtrl.availableCash);

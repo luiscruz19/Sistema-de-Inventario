@@ -25,7 +25,9 @@ api.get('/cheques', validateToken, chequesCtrl.list);
 api.get('/cheques/:id', validateToken, chequesCtrl.getById);
 api.post('/cheques', validateToken, chequesCtrl.create);
 api.put('/cheques/:id', validateToken, chequesCtrl.update);
+api.patch('/cheques/:id/depositar', validateToken, chequesCtrl.depositar);
 api.patch('/cheques/:id/cobrar', validateToken, chequesCtrl.cobrar);
 api.patch('/cheques/:id/rechazar', validateToken, chequesCtrl.rechazar);
+api.patch('/cheques/:id/anular', validateToken, chequesCtrl.anular);
 
 export default api;

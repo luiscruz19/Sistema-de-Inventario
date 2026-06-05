@@ -44,6 +44,12 @@ const Supplier = sequelize.define('suppliers', {
         allowNull: false,
         defaultValue: true,
     },
+    // Saldo de cuenta corriente. Positivo = se le debe al proveedor (cuenta a pagar).
+    balance: {
+        type: DataTypes.DECIMAL(12, 2),
+        allowNull: false,
+        defaultValue: 0,
+    },
 }, {
     tableName: 'suppliers',
     timestamps: true,

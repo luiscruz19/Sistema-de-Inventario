@@ -42,6 +42,8 @@ import TaxWithholding from './TaxWithholding.js';
 import MarketplaceConnection from './MarketplaceConnection.js';
 import MarketplaceProduct from './MarketplaceProduct.js';
 import MarketplaceOrder from './MarketplaceOrder.js';
+import SupplierTransaction from './SupplierTransaction.js';
+import CashMovement from './CashMovement.js';
 
 let associationsConfigured = false;
 
@@ -530,6 +532,14 @@ function setupAssociations() {
     // Sale -> MarketplaceOrders (cuando el pedido se convierte en venta)
     Sale.hasOne(MarketplaceOrder, { foreignKey: 'sale_id', as: 'marketplaceOrder' });
     MarketplaceOrder.belongsTo(Sale, { foreignKey: 'sale_id', as: 'sale' });
+
+    // Cuenta corriente de proveedores
+    Supplier.hasMany(SupplierTransaction, { foreignKey: 'supplier_id', as: 'transactions' });
+    SupplierTransaction.belongsTo(Supplier, { foreignKey: 'supplier_id', as: 'supplier' });
+
+    // Movimientos de caja (arqueo)
+    CashRegister.hasMany(CashMovement, { foreignKey: 'cash_register_id', as: 'movements' });
+    CashMovement.belongsTo(CashRegister, { foreignKey: 'cash_register_id', as: 'cashRegister' });
 }
 
 export {
@@ -578,6 +588,8 @@ export {
     MarketplaceConnection,
     MarketplaceProduct,
     MarketplaceOrder,
+    SupplierTransaction,
+    CashMovement,
 };
 
 export default {
@@ -625,4 +637,6 @@ export default {
     MarketplaceConnection,
     MarketplaceProduct,
     MarketplaceOrder,
+    SupplierTransaction,
+    CashMovement,
 };

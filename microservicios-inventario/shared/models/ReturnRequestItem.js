@@ -40,6 +40,12 @@ const ReturnRequestItem = sequelize.define('return_request_items', {
         allowNull: false,
         defaultValue: true,
     },
+    // Indica si el stock de este ítem ya fue reingresado (evita doble reingreso al procesar el RMA).
+    stock_reingresado: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
 }, {
     tableName: 'return_request_items',
     timestamps: true,

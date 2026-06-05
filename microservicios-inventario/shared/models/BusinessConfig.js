@@ -48,6 +48,26 @@ const BusinessConfig = sequelize.define('business_configs', {
         allowNull: false,
         defaultValue: false,
     },
+    // Umbral global de stock bajo (se usa cuando el producto no define min_stock_alert)
+    low_stock_threshold: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0,
+    },
+    // Contabilidad: generar asientos automáticos al confirmar ventas/compras
+    accounting_auto_entries: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+    },
+    acc_sales_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_vat_debit_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_vat_credit_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_cash_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_receivable_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_payable_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_inventory_account: { type: DataTypes.STRING(20), allowNull: true },
+    acc_purchases_account: { type: DataTypes.STRING(20), allowNull: true },
 }, {
     tableName: 'business_configs',
     timestamps: true,
