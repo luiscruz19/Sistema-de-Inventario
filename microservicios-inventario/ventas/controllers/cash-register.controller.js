@@ -176,9 +176,18 @@ export async function getCurrent(req, res) {
             return res.status(404).json(errorMessage({ message: messages.entities.cashRegister.errors.noneOpen }));
         }
 
+        // Esperado en tiempo real mientras la caja está abierta (apertura + ventas
+        // en efectivo + movimientos manuales), igual que en el cierre.
+        const { expected, cashIncome, manualIncome, manualExpense } = await computeExpectedCash(cashRegister);
+        const data = cashRegister.toJSON();
+        data.expected_amount = expected;
+        data.cash_income = cashIncome;
+        data.manual_income = manualIncome;
+        data.manual_expense = manualExpense;
+
         return res.status(200).json(successMessage({
             message: messages.entities.cashRegister.success.fetch,
-            extra: { data: cashRegister }
+            extra: { data }
         }));
     } catch (error) {
         console.error('Error getting current cash register:', error);

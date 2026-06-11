@@ -11,6 +11,11 @@ const Sale = sequelize.define('sales', {
         type: DataTypes.INTEGER,
         allowNull: false,
     },
+    // Apertura de caja bajo la que se registró la venta (requiere caja abierta).
+    cash_register_id: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+    },
     customer_id: {
         type: DataTypes.INTEGER,
         allowNull: true,

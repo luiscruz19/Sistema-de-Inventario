@@ -8,6 +8,7 @@ import StockMovement from '../models/StockMovement.js';
 import Customer from '../models/Customer.js';
 import CustomerTransaction from '../models/CustomerTransaction.js';
 import Branch from '../models/Branch.js';
+import CashRegister from '../models/CashRegister.js';
 import BusinessConfig from '../models/BusinessConfig.js';
 import sequelize from '../db/sequelize.js';
 import { Op } from 'sequelize';
@@ -20,11 +21,12 @@ import { generateSaleEntry } from '../utils/accounting.js';
  */
 export async function list(req, res) {
     try {
-        const { page = 1, limit = 20, branch_id, status, payment_method, date_from, date_to, search } = req.query;
+        const { page = 1, limit = 20, branch_id, cash_register_id, status, payment_method, date_from, date_to, search } = req.query;
         const offset = (Number(page) - 1) * Number(limit);
         const where = {};
 
         if (branch_id) where.branch_id = Number(branch_id);
+        if (cash_register_id) where.cash_register_id = Number(cash_register_id);
         if (status) where.status = status;
         if (payment_method) where.payment_method = payment_method;
 
@@ -131,6 +133,16 @@ export async function create(req, res) {
         if (!branch) {
             await t.rollback();
             return res.status(404).json(errorMessage({ message: 'Sucursal no encontrada' }));
+        }
+
+        // Requiere una caja abierta en la sucursal: la venta queda registrada bajo esa apertura.
+        const openRegister = await CashRegister.findOne({
+            where: { branch_id: Number(branch_id), status: 'open' },
+            transaction: t,
+        });
+        if (!openRegister) {
+            await t.rollback();
+            return res.status(400).json(errorMessage({ message: 'No hay una caja abierta en esta sucursal. Abrí la caja para poder registrar ventas.' }));
         }
 
         // Validar cantidades antes de procesar
@@ -297,6 +309,7 @@ export async function create(req, res) {
         // Crear la venta
         const sale = await Sale.create({
             branch_id,
+            cash_register_id: openRegister.id,
             customer_id: customer_id || null,
             sale_number: saleNumber,
             payment_method: effectiveMethod,
