@@ -23,3 +23,10 @@ export async function PUT(
     const result = await serviceRequest({ method: 'PUT', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/cheques/${id}`, token, data });
     return NextResponse.json(result);
 }
+
+export async function DELETE(_request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+    const { token } = await getApiHeaders();
+    const { id } = await params;
+    const result = await serviceRequest({ method: 'DELETE', baseUrl: CONFIG.TESORERIA_SERVICE_URL, path: `/cheques/${id}`, token });
+    return NextResponse.json(result);
+}
