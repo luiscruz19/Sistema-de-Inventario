@@ -1,6 +1,7 @@
 import PriceList from '../models/PriceList.js';
 import PriceListItem from '../models/PriceListItem.js';
 import Product from '../models/Product.js';
+import sequelize from '../db/sequelize.js';
 import { errorMessage, successMessage } from '../utils/messages.js';
 import messages from '../config/messages.js';
 
@@ -11,6 +12,14 @@ export async function list(req, res) {
 
         const priceLists = await PriceList.findAll({
             where,
+            attributes: {
+                include: [
+                    [
+                        sequelize.literal('(SELECT COUNT(*) FROM `price_list_items` WHERE `price_list_items`.`price_list_id` = `price_lists`.`id`)'),
+                        'itemCount'
+                    ]
+                ]
+            },
             order: [['name', 'ASC']],
         });
 

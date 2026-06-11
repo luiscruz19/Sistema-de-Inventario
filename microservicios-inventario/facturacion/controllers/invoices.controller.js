@@ -9,6 +9,7 @@ import Sale from '../models/Sale.js';
 import SaleItem from '../models/SaleItem.js';
 import Customer from '../models/Customer.js';
 import Product from '../models/Product.js';
+import VatBookEntry from '../models/VatBookEntry.js';
 import { errorMessage, successMessage } from '../utils/messages.js';
 import {
     requestCae,
@@ -283,6 +284,25 @@ async function persistInvoice({
         afip_response: caeResult.afip_response ? JSON.stringify(caeResult.afip_response) : null,
         rejection_reason: caeResult.rejection_reason || null,
     }, { transaction });
+
+    // Registro en el LIBRO IVA ventas (solo comprobantes efectivamente emitidos).
+    if (caeResult.status !== 'rejected') {
+        const issued = invoice.issued_at instanceof Date ? invoice.issued_at : new Date(invoice.issued_at);
+        await VatBookEntry.create({
+            tipo: 'ventas',
+            fecha: issued,
+            invoice_id: invoice.id,
+            comprobante_tipo: docType,
+            numero_comprobante: invoice.full_number,
+            // Consumidor Final no tiene CUIT: se registra con 0 (estándar libro IVA AR).
+            cuit_contraparte: invoice.receiver_doc_number || '0',
+            nombre_contraparte: invoice.receiver_name || 'Consumidor Final',
+            neto_gravado: netTotal,
+            neto_no_gravado: 0,
+            total: grandTotal,
+            periodo: issued.toISOString().slice(0, 7),
+        }, { transaction });
+    }
 
     return invoice;
 }

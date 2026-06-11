@@ -161,7 +161,16 @@ export async function bulkCreate(req, res) {
             return res.status(404).json(errorMessage({ message: 'Producto no encontrado' }));
         }
 
-        const records = numeros_serie.map(ns => ({
+        // Detectamos duplicados explícitamente para reportar cuántos se insertaron
+        // de verdad (ignoreDuplicates los salta en silencio y sobrecuenta).
+        const existing = await ProductSerial.findAll({
+            where: { numero_serie: numeros_serie },
+            attributes: ['numero_serie'],
+        });
+        const existingSet = new Set(existing.map(e => e.numero_serie));
+        const newSerials = [...new Set(numeros_serie)].filter(ns => !existingSet.has(ns));
+
+        const records = newSerials.map(ns => ({
             product_id,
             variant_id: variant_id || null,
             numero_serie: ns,
@@ -170,13 +179,12 @@ export async function bulkCreate(req, res) {
             garantia_hasta: garantia_hasta || null,
         }));
 
-        const created = await ProductSerial.bulkCreate(records, {
-            ignoreDuplicates: true,
-        });
+        const created = records.length ? await ProductSerial.bulkCreate(records) : [];
+        const skipped = numeros_serie.length - created.length;
 
         return res.status(201).json(successMessage({
-            data: { created: created.length, total: numeros_serie.length },
-            message: `${created.length} números de serie creados`,
+            data: { created: created.length, skipped, total: numeros_serie.length },
+            message: `${created.length} números de serie creados${skipped > 0 ? `, ${skipped} ya existían y se omitieron` : ''}`,
         }));
     } catch (error) {
         console.error('serials bulkCreate error:', error);

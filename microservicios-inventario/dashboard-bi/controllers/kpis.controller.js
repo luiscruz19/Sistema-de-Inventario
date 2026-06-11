@@ -281,7 +281,7 @@ export async function stockAlerts(req, res) {
             `SELECT p.id, p.name, p.sku, p.min_stock_alert,
                     COALESCE(SUM(s.quantity), 0) AS total_stock
              FROM products p
-             LEFT JOIN stocks s
+             LEFT JOIN stock s
                  ON s.product_id = p.id
              WHERE p.active = true
                AND p.track_stock = true

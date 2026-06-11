@@ -69,7 +69,9 @@ export async function create(req, res) {
             return res.status(404).json(errorMessage({ message: 'Cliente no encontrado' }));
         }
 
-        const delta = type === 'credit' ? Number(amount) : -Number(amount);
+        // Convención unificada con las ventas: 'debit' aumenta la deuda del
+        // cliente (+saldo), 'credit' la reduce (-saldo, p.ej. un pago recibido).
+        const delta = type === 'debit' ? Number(amount) : -Number(amount);
         const newBalance = Number(customer.balance) + delta;
 
         await customer.update({ balance: newBalance }, { transaction: t });

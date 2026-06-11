@@ -221,6 +221,32 @@ export async function receive(req, res) {
                 reference_id: transfer.id,
                 created_by: req.user?.id || null,
             }, { transaction: t });
+
+            // Recepción parcial: la diferencia (enviado - recibido) vuelve al origen
+            // para no perder inventario (el origen se debitó el total enviado al crear).
+            const shortfall = Number(transferItem.quantity_sent) - qtyReceived;
+            if (shortfall > 0) {
+                const [originStock] = await Stock.findOrCreate({
+                    where: { product_id: transferItem.product_id, variant_id: transferItem.variant_id, branch_id: transfer.from_branch_id },
+                    defaults: { product_id: transferItem.product_id, variant_id: transferItem.variant_id, branch_id: transfer.from_branch_id, quantity: 0, reserved_quantity: 0 },
+                    transaction: t,
+                });
+                const oPrev = Number(originStock.quantity);
+                const oNew = oPrev + shortfall;
+                await originStock.update({ quantity: oNew }, { transaction: t });
+                await StockMovement.create({
+                    product_id: transferItem.product_id,
+                    variant_id: transferItem.variant_id,
+                    branch_id: transfer.from_branch_id,
+                    type: 'transfer_in',
+                    quantity: shortfall,
+                    previous_stock: oPrev,
+                    new_stock: oNew,
+                    reference_type: 'transfer',
+                    reference_id: transfer.id,
+                    created_by: req.user?.id || null,
+                }, { transaction: t });
+            }
         }
 
         await transfer.update({
