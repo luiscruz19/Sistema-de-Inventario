@@ -5,11 +5,17 @@ import messages from '../config/messages.js';
 export async function list(req, res) {
     try {
         const where = {};
-        if (req.query.active !== undefined) where.active = req.query.active === 'true';
+        if (req.query.active === undefined) where.active = true;
+        else if (req.query.active !== 'all') where.active = req.query.active === 'true';
+
+        // El filtro active debe aplicar también a las subcategorías del árbol,
+        // si no una subcategoría dada de baja sigue colgando de una raíz activa.
+        const subInclude = { model: Category, as: 'subcategories', required: false };
+        if (where.active !== undefined) subInclude.where = { active: where.active };
 
         const categories = await Category.findAll({
             where,
-            include: [{ model: Category, as: 'subcategories' }],
+            include: [subInclude],
             order: [['sort_order', 'ASC'], ['name', 'ASC']],
         });
 

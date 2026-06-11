@@ -5,7 +5,8 @@ import messages from '../config/messages.js';
 export async function list(req, res) {
     try {
         const where = {};
-        if (req.query.active !== undefined) where.active = req.query.active === 'true';
+        if (req.query.active === undefined) where.active = true;
+        else if (req.query.active !== 'all') where.active = req.query.active === 'true';
 
         const branches = await Branch.findAll({
             where,

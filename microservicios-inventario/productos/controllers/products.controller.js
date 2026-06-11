@@ -18,7 +18,9 @@ export async function list(req, res) {
         const where = {};
 
         if (category_id) where.category_id = Number(category_id);
-        if (active !== undefined) where.active = active === 'true';
+        // Por defecto se ocultan los inactivos (soft-deleted). active=false o all para verlos.
+        if (active === undefined) where.active = true;
+        else if (active !== 'all') where.active = active === 'true';
         if (track_stock !== undefined) where.track_stock = track_stock === 'true';
 
         if (search) {
@@ -34,10 +36,12 @@ export async function list(req, res) {
             include: [
                 { model: Category, as: 'category', attributes: ['id', 'name'] },
                 { model: ProductVariant, as: 'variants', required: false },
+                { model: Stock, as: 'stockEntries', attributes: ['id', 'variant_id', 'branch_id', 'quantity', 'reserved_quantity'], required: false },
             ],
             order: [['name', 'ASC']],
             limit: Number(limit),
             offset,
+            distinct: true,
         });
 
         return res.status(200).json(successMessage({

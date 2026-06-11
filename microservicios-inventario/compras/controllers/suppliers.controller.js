@@ -9,7 +9,8 @@ export async function list(req, res) {
         const offset = (Number(page) - 1) * Number(limit);
         const where = {};
 
-        if (active !== undefined) where.active = active === 'true';
+        if (active === undefined) where.active = true;
+        else if (active !== 'all') where.active = active === 'true';
         if (search) {
             where[Op.or] = [
                 { name: { [Op.like]: `%${search}%` } },
