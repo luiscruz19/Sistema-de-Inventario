@@ -3,7 +3,9 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
+import axios from 'axios'
 import { useInvoices } from '@/hooks/use-invoices'
+import { getRequestHeaders } from '@/utils/request-headers'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -58,13 +60,30 @@ export default function InvoiceDetailPage() {
         }
     }
 
+    async function handleDownloadPdf() {
+        // El proxy /api/invoices/[id]/pdf toma el token de los headers de la request.
+        // Una navegacion <a href> no envia headers, asi que descargamos via axios con auth.
+        const token = typeof window !== 'undefined' ? localStorage.getItem('inventario_token') ?? undefined : undefined
+        try {
+            const res = await axios.get(`/api/invoices/${invoice!.id}/pdf`, {
+                headers: getRequestHeaders(token),
+                responseType: 'blob',
+            })
+            const url = URL.createObjectURL(res.data as Blob)
+            window.open(url, '_blank')
+            setTimeout(() => URL.revokeObjectURL(url), 60000)
+        } catch {
+            toast({ title: 'Error', description: 'No se pudo obtener el PDF', variant: 'destructive' })
+        }
+    }
+
     async function handleCreditNote() {
         setActing(true)
         const res = await createCreditNote(id)
         setActing(false)
         if (res.status === 1) {
             toast({ title: 'Nota de crédito emitida', variant: 'success' })
-            router.push('/inventario/facturacion')
+            router.push('/facturacion')
         } else {
             toast({ title: 'Error', description: res.message, variant: 'destructive' })
         }
@@ -77,14 +96,14 @@ export default function InvoiceDetailPage() {
         </div>
     )
     if (!invoice) return (
-        <Card><CardContent className="p-0"><EmptyState icon={FileX} title="Factura no encontrada" description="El comprobante que buscas no existe o fue eliminado." action={<Link href="/inventario/facturacion"><Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" /> Volver al listado</Button></Link>} /></CardContent></Card>
+        <Card><CardContent className="p-0"><EmptyState icon={FileX} title="Factura no encontrada" description="El comprobante que buscas no existe o fue eliminado." action={<Link href="/facturacion"><Button variant="outline"><ArrowLeft className="h-4 w-4 mr-2" /> Volver al listado</Button></Link>} /></CardContent></Card>
     )
 
     return (
         <div>
             <div className="flex items-center justify-between mb-6">
                 <div>
-                    <Link href="/inventario/facturacion" className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1">
+                    <Link href="/facturacion" className="text-sm text-muted-foreground hover:underline inline-flex items-center gap-1">
                         <ArrowLeft className="h-4 w-4" /> Volver al listado
                     </Link>
                     <h1 className="text-2xl font-semibold tracking-tight mt-1">
@@ -98,9 +117,7 @@ export default function InvoiceDetailPage() {
                     </div>
                 </div>
                 <div className="flex gap-2">
-                    <a href={`/inventario/api/invoices/${invoice.id}/pdf`} target="_blank" rel="noreferrer">
-                        <Button variant="outline"><Download className="h-4 w-4 mr-2" /> PDF</Button>
-                    </a>
+                    <Button variant="outline" onClick={handleDownloadPdf}><Download className="h-4 w-4 mr-2" /> PDF</Button>
                     {invoice.status === 'rejected' && (
                         <Button onClick={handleRetry} disabled={acting}>
                             <RefreshCw className="h-4 w-4 mr-2" /> Reintentar CAE

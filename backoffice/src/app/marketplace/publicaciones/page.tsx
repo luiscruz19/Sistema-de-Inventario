@@ -9,34 +9,26 @@ import { formatCurrency } from '@/lib/utils'
 import { Tag } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-type ListingStatus = 'active' | 'paused' | 'closed' | 'under_review'
-
 type MarketplaceListing = {
     id: number
     connection_id: number
-    connection?: { name: string; platform: string }
+    connection?: { id: number; marketplace: string; nombre: string }
     product_id: number
-    product?: { name: string }
-    external_id: string
-    title: string
-    price: number
-    published_stock: number
-    status: ListingStatus
-    url?: string
+    product?: { id: number; name: string; sku: string }
+    variant_id: number | null
+    marketplace_item_id: string
+    titulo: string
+    precio_publicado: number | string
+    stock_publicado: number
+    activa: boolean
+    ultimo_sync_at: string | null
     updatedAt: string
-}
-
-const statusMap: Record<ListingStatus, { label: string; variant: 'success' | 'secondary' | 'warning' | 'destructive' }> = {
-    active: { label: 'Activa', variant: 'success' },
-    paused: { label: 'Pausada', variant: 'warning' },
-    closed: { label: 'Cerrada', variant: 'secondary' },
-    under_review: { label: 'En revision', variant: 'destructive' },
 }
 
 export default function PublicacionesPage() {
     const api = useApi()
     const [listings, setListings] = useState<MarketplaceListing[]>([])
-    const [connections, setConnections] = useState<{ id: number; name: string; platform: string }[]>([])
+    const [connections, setConnections] = useState<{ id: number; marketplace: string; nombre: string }[]>([])
     const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
     const [loading, setLoading] = useState(true)
     const [connectionFilter, setConnectionFilter] = useState('')
@@ -46,8 +38,8 @@ export default function PublicacionesPage() {
         setLoading(true)
         const params: Record<string, string> = { page: String(page), limit: '20' }
         if (connectionFilter) params.connection_id = connectionFilter
-        if (statusFilter) params.status = statusFilter
-        const res = await api.get<MarketplaceListing[]>('/marketplace-listings', params)
+        if (statusFilter) params.activa = statusFilter
+        const res = await api.get<MarketplaceListing[]>('/marketplace/products', params)
         if (res.status === 1 && res.data) {
             setListings(Array.isArray(res.data) ? res.data : [])
             if (res.pagination) setPagination(res.pagination)
@@ -56,7 +48,7 @@ export default function PublicacionesPage() {
     }, [api, connectionFilter, statusFilter])
 
     const fetchConnections = useCallback(async () => {
-        const res = await api.get<{ id: number; name: string; platform: string }[]>('/marketplace-connections', { limit: '100' })
+        const res = await api.get<{ id: number; marketplace: string; nombre: string }[]>('/marketplace/connections', { limit: '100' })
         if (res.status === 1 && res.data) setConnections(Array.isArray(res.data) ? res.data : [])
     }, [api])
 
@@ -67,7 +59,7 @@ export default function PublicacionesPage() {
         {
             key: 'connection',
             label: 'Marketplace',
-            render: (_, row) => <span className="text-sm font-medium">{row.connection?.name || `#${row.connection_id}`}</span>,
+            render: (_, row) => <span className="text-sm font-medium">{row.connection?.nombre || `#${row.connection_id}`}</span>,
         },
         {
             key: 'product',
@@ -75,37 +67,32 @@ export default function PublicacionesPage() {
             render: (_, row) => <span className="text-sm">{row.product?.name || `#${row.product_id}`}</span>,
         },
         {
-            key: 'title',
+            key: 'titulo',
             label: 'Titulo publicado',
             render: (v, row) => (
                 <div>
                     <p className="text-sm font-medium">{v as string}</p>
-                    {row.url && (
-                        <a href={row.url} target="_blank" rel="noopener noreferrer" className="text-xs text-primary hover:underline">
-                            Ver publicacion
-                        </a>
-                    )}
+                    <span className="text-xs text-muted-foreground">{row.marketplace_item_id}</span>
                 </div>
             ),
         },
         {
-            key: 'price',
+            key: 'precio_publicado',
             label: 'Precio',
             sortable: true,
-            render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span>,
+            render: (v) => <span className="font-semibold">{formatCurrency(Number(v))}</span>,
         },
         {
-            key: 'published_stock',
+            key: 'stock_publicado',
             label: 'Stock publicado',
             render: (v) => <span className="text-sm">{v as number}</span>,
         },
         {
-            key: 'status',
+            key: 'activa',
             label: 'Estado',
-            render: (v) => {
-                const s = statusMap[v as ListingStatus]
-                return s ? <Badge variant={s.variant}>{s.label}</Badge> : <Badge variant="secondary">{v as string}</Badge>
-            },
+            render: (v) => (
+                <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activa' : 'Inactiva'}</Badge>
+            ),
         },
     ]
 
@@ -121,27 +108,25 @@ export default function PublicacionesPage() {
             </div>
 
             <div className="flex flex-wrap gap-3 mb-4">
-                <Select value={connectionFilter} onValueChange={setConnectionFilter}>
+                <Select value={connectionFilter || '__all__'} onValueChange={(v) => setConnectionFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[220px]">
                         <SelectValue placeholder="Todas las conexiones" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todas las conexiones</SelectItem>
+                        <SelectItem value="__all__">Todas las conexiones</SelectItem>
                         {connections.map(c => (
-                            <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={String(c.id)}>{c.nombre}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter || '__all__'} onValueChange={(v) => setStatusFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Todos los estados" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todos los estados</SelectItem>
-                        <SelectItem value="active">Activa</SelectItem>
-                        <SelectItem value="paused">Pausada</SelectItem>
-                        <SelectItem value="closed">Cerrada</SelectItem>
-                        <SelectItem value="under_review">En revision</SelectItem>
+                        <SelectItem value="__all__">Todos los estados</SelectItem>
+                        <SelectItem value="true">Activa</SelectItem>
+                        <SelectItem value="false">Inactiva</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

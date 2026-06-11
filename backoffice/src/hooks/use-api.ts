@@ -67,11 +67,24 @@ export function useApi() {
         }
     }, [])
 
+    const patch = useCallback(async <T = unknown>(path: string, body?: unknown): Promise<ApiResponse<T>> => {
+        setLoading(true)
+        try {
+            const { data } = await axios.patch<ApiResponse<T>>(`${API_BASE}${path}`, body, { headers: getHeaders() })
+            return data
+        } catch (e: unknown) {
+            if (axios.isAxiosError(e)) return (e.response?.data as ApiResponse<T>) ?? { status: 0, message: 'Error de conexion' }
+            return { status: 0, message: 'Error desconocido' }
+        } finally {
+            setLoading(false)
+        }
+    }, [])
+
     // Ref con identidad estable para evitar que páginas que usan `api` como dep de useCallback
     // entren en loop infinito cuando el loading state interno cambia.
-    const apiRef = useRef<{ get: typeof get; post: typeof post; put: typeof put; del: typeof del; loading: boolean } | null>(null)
+    const apiRef = useRef<{ get: typeof get; post: typeof post; put: typeof put; del: typeof del; patch: typeof patch; loading: boolean } | null>(null)
     if (!apiRef.current) {
-        apiRef.current = { get, post, put, del, loading }
+        apiRef.current = { get, post, put, del, patch, loading }
     } else {
         apiRef.current.loading = loading
     }

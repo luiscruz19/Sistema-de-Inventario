@@ -10,47 +10,44 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { Eye, ShoppingBag, PackageCheck } from 'lucide-react'
+import { Eye, ShoppingBag } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-type OrderStatus = 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled' | 'refunded'
+type OrderStatus = 'pendiente' | 'pagado' | 'enviado' | 'entregado' | 'cancelado'
 
-type MarketplaceOrderItem = {
-    id: number
-    external_item_id: string
-    title: string
-    quantity: number
-    unit_price: number
-    subtotal: number
+type MarketplaceConnectionRef = {
+    id?: number
+    nombre: string
+    marketplace?: string
 }
 
 type MarketplaceOrder = {
     id: number
     connection_id: number
-    connection?: { name: string; platform: string }
-    external_order_id: string
-    buyer_name: string
+    connection?: MarketplaceConnectionRef
+    marketplace_order_id: string
+    buyer_nombre: string
     buyer_email?: string
+    buyer_telefono?: string
     total: number
-    status: OrderStatus
-    internal_sale_id?: number
-    items?: MarketplaceOrderItem[]
+    moneda?: string
+    estado: OrderStatus
+    sale_id?: number
     createdAt: string
 }
 
 const statusMap: Record<OrderStatus, { label: string; variant: 'warning' | 'success' | 'secondary' | 'destructive' }> = {
-    pending: { label: 'Pendiente', variant: 'warning' },
-    confirmed: { label: 'Confirmada', variant: 'success' },
-    shipped: { label: 'Enviada', variant: 'secondary' },
-    delivered: { label: 'Entregada', variant: 'success' },
-    cancelled: { label: 'Cancelada', variant: 'destructive' },
-    refunded: { label: 'Reembolsada', variant: 'destructive' },
+    pendiente: { label: 'Pendiente', variant: 'warning' },
+    pagado: { label: 'Pagada', variant: 'success' },
+    enviado: { label: 'Enviada', variant: 'secondary' },
+    entregado: { label: 'Entregada', variant: 'success' },
+    cancelado: { label: 'Cancelada', variant: 'destructive' },
 }
 
 export default function MarketplaceOrdenesPage() {
     const api = useApi()
     const [orders, setOrders] = useState<MarketplaceOrder[]>([])
-    const [connections, setConnections] = useState<{ id: number; name: string }[]>([])
+    const [connections, setConnections] = useState<{ id: number; nombre: string }[]>([])
     const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
     const [loading, setLoading] = useState(true)
     const [connectionFilter, setConnectionFilter] = useState('')
@@ -62,8 +59,8 @@ export default function MarketplaceOrdenesPage() {
         setLoading(true)
         const params: Record<string, string> = { page: String(page), limit: '20' }
         if (connectionFilter) params.connection_id = connectionFilter
-        if (statusFilter) params.status = statusFilter
-        const res = await api.get<MarketplaceOrder[]>('/marketplace-orders', params)
+        if (statusFilter) params.estado = statusFilter
+        const res = await api.get<MarketplaceOrder[]>('/marketplace/orders', params)
         if (res.status === 1 && res.data) {
             setOrders(Array.isArray(res.data) ? res.data : [])
             if (res.pagination) setPagination(res.pagination)
@@ -72,7 +69,7 @@ export default function MarketplaceOrdenesPage() {
     }, [api, connectionFilter, statusFilter])
 
     const fetchConnections = useCallback(async () => {
-        const res = await api.get<{ id: number; name: string }[]>('/marketplace-connections', { limit: '100' })
+        const res = await api.get<{ id: number; nombre: string }[]>('/marketplace/connections', { limit: '100' })
         if (res.status === 1 && res.data) setConnections(Array.isArray(res.data) ? res.data : [])
     }, [api])
 
@@ -80,29 +77,18 @@ export default function MarketplaceOrdenesPage() {
     useEffect(() => { fetchConnections() }, [fetchConnections])
 
     const viewDetail = async (order: MarketplaceOrder) => {
-        const res = await api.get<MarketplaceOrder>(`/marketplace-orders/${order.id}`)
+        const res = await api.get<MarketplaceOrder>(`/marketplace/orders/${order.id}`)
         if (res.status === 1 && res.data) setSelectedOrder(res.data)
         else setSelectedOrder(order)
         setShowDetail(true)
     }
 
-    const updateStatus = async (id: number, status: OrderStatus) => {
-        const res = await api.put(`/marketplace-orders/${id}`, { status })
+    const updateStatus = async (id: number, estado: OrderStatus) => {
+        const res = await api.patch(`/marketplace/orders/${id}/status`, { estado })
         if (res.status === 1) {
             toast({ title: 'Estado actualizado', variant: 'success' })
             fetchOrders(pagination.currentPage)
-            if (selectedOrder?.id === id) setSelectedOrder(prev => prev ? { ...prev, status } : null)
-        } else {
-            toast({ title: 'Error', description: res.message, variant: 'destructive' })
-        }
-    }
-
-    const generateInternalSale = async (id: number) => {
-        if (!confirm('Generar venta interna a partir de esta orden?')) return
-        const res = await api.post(`/marketplace-orders/${id}/generate-sale`, {})
-        if (res.status === 1) {
-            toast({ title: 'Venta interna generada', variant: 'success' })
-            fetchOrders(pagination.currentPage)
+            if (selectedOrder?.id === id) setSelectedOrder(prev => prev ? { ...prev, estado } : null)
         } else {
             toast({ title: 'Error', description: res.message, variant: 'destructive' })
         }
@@ -112,15 +98,15 @@ export default function MarketplaceOrdenesPage() {
         {
             key: 'connection',
             label: 'Marketplace',
-            render: (_, row) => <span className="text-sm font-medium">{row.connection?.name || `#${row.connection_id}`}</span>,
+            render: (_, row) => <span className="text-sm font-medium">{row.connection?.nombre || `#${row.connection_id}`}</span>,
         },
         {
-            key: 'external_order_id',
+            key: 'marketplace_order_id',
             label: 'N° Orden',
             render: (v) => <span className="font-mono text-sm font-semibold">{v as string}</span>,
         },
         {
-            key: 'buyer_name',
+            key: 'buyer_nombre',
             label: 'Comprador',
             render: (v) => <span className="text-sm">{v as string}</span>,
         },
@@ -131,7 +117,7 @@ export default function MarketplaceOrdenesPage() {
             render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span>,
         },
         {
-            key: 'status',
+            key: 'estado',
             label: 'Estado',
             render: (v) => {
                 const s = statusMap[v as OrderStatus]
@@ -158,28 +144,28 @@ export default function MarketplaceOrdenesPage() {
             </div>
 
             <div className="flex flex-wrap gap-3 mb-4">
-                <Select value={connectionFilter} onValueChange={setConnectionFilter}>
+                <Select value={connectionFilter || '__all__'} onValueChange={(v) => setConnectionFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[220px]">
                         <SelectValue placeholder="Todas las conexiones" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todas las conexiones</SelectItem>
+                        <SelectItem value="__all__">Todas las conexiones</SelectItem>
                         {connections.map(c => (
-                            <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>
+                            <SelectItem key={c.id} value={String(c.id)}>{c.nombre}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter || '__all__'} onValueChange={(v) => setStatusFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Todos los estados" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todos los estados</SelectItem>
-                        <SelectItem value="pending">Pendiente</SelectItem>
-                        <SelectItem value="confirmed">Confirmada</SelectItem>
-                        <SelectItem value="shipped">Enviada</SelectItem>
-                        <SelectItem value="delivered">Entregada</SelectItem>
-                        <SelectItem value="cancelled">Cancelada</SelectItem>
+                        <SelectItem value="__all__">Todos los estados</SelectItem>
+                        <SelectItem value="pendiente">Pendiente</SelectItem>
+                        <SelectItem value="pagado">Pagada</SelectItem>
+                        <SelectItem value="enviado">Enviada</SelectItem>
+                        <SelectItem value="entregado">Entregada</SelectItem>
+                        <SelectItem value="cancelado">Cancelada</SelectItem>
                     </SelectContent>
                 </Select>
             </div>
@@ -196,11 +182,6 @@ export default function MarketplaceOrdenesPage() {
                         <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewDetail(row)}>
                             <Eye className="h-4 w-4" />
                         </Button>
-                        {!row.internal_sale_id && row.status === 'confirmed' && (
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" title="Generar venta interna" onClick={() => generateInternalSale(row.id)}>
-                                <PackageCheck className="h-4 w-4" />
-                            </Button>
-                        )}
                     </div>
                 )}
             />
@@ -210,82 +191,67 @@ export default function MarketplaceOrdenesPage() {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            Orden {selectedOrder?.external_order_id}
+                            Orden {selectedOrder?.marketplace_order_id}
                             {selectedOrder && (
-                                <Badge variant={statusMap[selectedOrder.status]?.variant}>
-                                    {statusMap[selectedOrder.status]?.label}
+                                <Badge variant={statusMap[selectedOrder.estado]?.variant}>
+                                    {statusMap[selectedOrder.estado]?.label}
                                 </Badge>
                             )}
                         </DialogTitle>
                         <DialogDescription>
-                            {selectedOrder?.connection?.name} — {selectedOrder?.buyer_name}
+                            {selectedOrder?.connection?.nombre} — {selectedOrder?.buyer_nombre}
                         </DialogDescription>
                     </DialogHeader>
                     {selectedOrder && (
                         <div className="space-y-4">
                             <div className="grid grid-cols-2 gap-3 text-sm">
-                                <div><span className="text-muted-foreground">Comprador:</span> {selectedOrder.buyer_name}</div>
+                                <div><span className="text-muted-foreground">Comprador:</span> {selectedOrder.buyer_nombre}</div>
                                 {selectedOrder.buyer_email && (
                                     <div><span className="text-muted-foreground">Email:</span> {selectedOrder.buyer_email}</div>
                                 )}
+                                {selectedOrder.buyer_telefono && (
+                                    <div><span className="text-muted-foreground">Teléfono:</span> {selectedOrder.buyer_telefono}</div>
+                                )}
                                 <div><span className="text-muted-foreground">Fecha:</span> {formatDateTime(selectedOrder.createdAt)}</div>
-                                {selectedOrder.internal_sale_id && (
-                                    <div><span className="text-muted-foreground">Venta interna:</span> #{selectedOrder.internal_sale_id}</div>
+                                {selectedOrder.sale_id && (
+                                    <div><span className="text-muted-foreground">Venta interna:</span> #{selectedOrder.sale_id}</div>
                                 )}
                             </div>
 
-                            {selectedOrder.items && selectedOrder.items.length > 0 && (
-                                <>
-                                    <Separator />
-                                    <div>
-                                        <p className="font-medium text-sm mb-2">Items</p>
-                                        {selectedOrder.items.map((item) => (
-                                            <div key={item.id} className="flex justify-between text-sm py-1 border-b border-border last:border-0">
-                                                <span>{item.title} x{item.quantity}</span>
-                                                <span className="font-medium">{formatCurrency(item.subtotal)}</span>
-                                            </div>
-                                        ))}
-                                        <div className="flex justify-between font-bold mt-2 pt-2">
-                                            <span>Total</span>
-                                            <span>{formatCurrency(selectedOrder.total)}</span>
-                                        </div>
-                                    </div>
-                                </>
-                            )}
+                            <Separator />
+                            <div className="flex justify-between font-bold">
+                                <span>Total</span>
+                                <span>{formatCurrency(selectedOrder.total)}</span>
+                            </div>
 
                             {/* Acciones de estado */}
-                            {selectedOrder.status === 'pending' && (
+                            {selectedOrder.estado === 'pendiente' && (
                                 <>
                                     <Separator />
                                     <div className="flex gap-2">
-                                        <Button size="sm" variant="outline" onClick={() => updateStatus(selectedOrder.id, 'confirmed')}>
-                                            Confirmar orden
+                                        <Button size="sm" variant="outline" onClick={() => updateStatus(selectedOrder.id, 'pagado')}>
+                                            Marcar como pagada
                                         </Button>
-                                        <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateStatus(selectedOrder.id, 'cancelled')}>
+                                        <Button size="sm" variant="outline" className="text-destructive" onClick={() => updateStatus(selectedOrder.id, 'cancelado')}>
                                             Cancelar
                                         </Button>
                                     </div>
                                 </>
                             )}
-                            {selectedOrder.status === 'confirmed' && (
+                            {selectedOrder.estado === 'pagado' && (
                                 <>
                                     <Separator />
                                     <div className="flex gap-2">
-                                        <Button size="sm" onClick={() => updateStatus(selectedOrder.id, 'shipped')}>
+                                        <Button size="sm" onClick={() => updateStatus(selectedOrder.id, 'enviado')}>
                                             Marcar como enviada
                                         </Button>
-                                        {!selectedOrder.internal_sale_id && (
-                                            <Button size="sm" variant="outline" onClick={() => generateInternalSale(selectedOrder.id)}>
-                                                <PackageCheck className="h-4 w-4 mr-1" /> Generar venta interna
-                                            </Button>
-                                        )}
                                     </div>
                                 </>
                             )}
-                            {selectedOrder.status === 'shipped' && (
+                            {selectedOrder.estado === 'enviado' && (
                                 <>
                                     <Separator />
-                                    <Button size="sm" onClick={() => updateStatus(selectedOrder.id, 'delivered')}>
+                                    <Button size="sm" onClick={() => updateStatus(selectedOrder.id, 'entregado')}>
                                         Marcar como entregada
                                     </Button>
                                 </>

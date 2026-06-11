@@ -12,16 +12,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { DataTable, type Column } from '@/components/common/DataTable'
+import { PageHead } from '@/components/common/PageHead'
 import { Skeleton } from '@/components/ui/skeleton'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Lock, Unlock, DollarSign, TrendingUp, AlertCircle } from 'lucide-react'
-import type { CashRegister, Branch } from '@/types'
+import type { CashRegister, Branch, Sale } from '@/types'
 
 export default function CajaPage() {
     const api = useApi()
     const [branches, setBranches] = useState<Branch[]>([])
     const [selectedBranch, setSelectedBranch] = useState('')
     const [currentRegister, setCurrentRegister] = useState<CashRegister | null>(null)
+    const [sessionSales, setSessionSales] = useState<Sale[]>([])
     const [history, setHistory] = useState<CashRegister[]>([])
     const [loading, setLoading] = useState(true)
     const [showOpenModal, setShowOpenModal] = useState(false)
@@ -46,9 +48,16 @@ export default function CajaPage() {
             api.get<CashRegister>('/cash-register', { current: 'true', branch_id: selectedBranch }),
             api.get<CashRegister[]>('/cash-register', { branch_id: selectedBranch, limit: '20' }),
         ])
-        if (currentRes.status === 1 && currentRes.data) setCurrentRegister(currentRes.data)
-        else setCurrentRegister(null)
+        const currentReg = currentRes.status === 1 && currentRes.data ? currentRes.data : null
+        setCurrentRegister(currentReg)
         if (historyRes.status === 1 && historyRes.data) setHistory(Array.isArray(historyRes.data) ? historyRes.data : [])
+        // Ventas registradas bajo la apertura activa.
+        if (currentReg?.id) {
+            const salesRes = await api.get<Sale[]>('/sales', { cash_register_id: String(currentReg.id), limit: '100' })
+            setSessionSales(salesRes.status === 1 && Array.isArray(salesRes.data) ? salesRes.data : [])
+        } else {
+            setSessionSales([])
+        }
         setLoading(false)
     }, [api, selectedBranch])
 
@@ -103,17 +112,16 @@ export default function CajaPage() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <h1 className="text-2xl font-semibold tracking-tight">Caja</h1>
+            <PageHead title="Caja" sub="Arqueo, apertura/cierre y movimientos de caja">
                 <Select value={selectedBranch} onValueChange={setSelectedBranch}>
-                    <SelectTrigger className="w-[200px]">
+                    <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Seleccionar sucursal" />
                     </SelectTrigger>
                     <SelectContent>
                         {branches.map(b => <SelectItem key={b.id} value={String(b.id)}>{b.name}</SelectItem>)}
                     </SelectContent>
                 </Select>
-            </div>
+            </PageHead>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
                 <Card>
@@ -178,6 +186,36 @@ export default function CajaPage() {
                     </CardContent>
                 </Card>
             </div>
+
+            {currentRegister?.status === 'open' && (
+                <Card className="mb-6">
+                    <CardHeader>
+                        <div className="flex items-center justify-between">
+                            <CardTitle className="text-base">Ventas de esta apertura</CardTitle>
+                            <Badge variant="secondary">
+                                {sessionSales.length} {sessionSales.length === 1 ? 'venta' : 'ventas'} · {formatCurrency(sessionSales.reduce((acc, v) => acc + Number(v.total), 0))}
+                            </Badge>
+                        </div>
+                    </CardHeader>
+                    <CardContent>
+                        {sessionSales.length === 0 ? (
+                            <p className="text-sm text-muted-foreground">Todavía no se registraron ventas en esta caja.</p>
+                        ) : (
+                            <div className="divide-y divide-border">
+                                {sessionSales.map(s => (
+                                    <div key={s.id} className="flex items-center justify-between py-2 text-sm">
+                                        <div>
+                                            <span className="font-medium">{s.sale_number || `#${s.id}`}</span>
+                                            <span className="ml-2 text-muted-foreground">{s.createdAt ? formatDateTime(s.createdAt) : ''}</span>
+                                        </div>
+                                        <span className="font-semibold tabular-nums">{formatCurrency(Number(s.total))}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </CardContent>
+                </Card>
+            )}
 
             <Card>
                 <CardHeader>

@@ -15,35 +15,39 @@ import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Plus, Eye, FileSpreadsheet, XCircle } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-type JournalStatus = 'borrador' | 'confirmado' | 'anulado'
-
-type JournalLine = {
+// Form-side line shape (inputs use strings). Persisted as debe/haber/descripcion in backend.
+type JournalLineForm = {
     id?: number
     account_id: string
-    account?: { code: string; name: string }
-    description: string
+    descripcion: string
     debit: string
     credit: string
 }
 
+// Backend line shape (debe/haber come back as DECIMAL strings)
+type JournalLine = {
+    id?: number
+    account_id: number
+    account?: { id: number; codigo: string; nombre: string; tipo: string } | null
+    descripcion?: string | null
+    debe: string
+    haber: string
+}
+
 type JournalEntry = {
     id: number
-    entry_number: string
-    date: string
-    description: string
-    status: JournalStatus
-    total: number
+    numero: number
+    fecha: string
+    descripcion: string
+    tipo: 'manual' | 'automatico'
+    aprobado: boolean
+    total_debe: string
+    total_haber: string
     lines?: JournalLine[]
     createdAt: string
 }
 
-const emptyLine: JournalLine = { account_id: '', description: '', debit: '0', credit: '0' }
-
-const statusMap: Record<JournalStatus, { label: string; variant: 'secondary' | 'success' | 'destructive' }> = {
-    borrador: { label: 'Borrador', variant: 'secondary' },
-    confirmado: { label: 'Confirmado', variant: 'success' },
-    anulado: { label: 'Anulado', variant: 'destructive' },
-}
+const emptyLine: JournalLineForm = { account_id: '', descripcion: '', debit: '0', credit: '0' }
 
 export default function AsientosPage() {
     const api = useApi()
@@ -58,7 +62,7 @@ export default function AsientosPage() {
 
     const [formDate, setFormDate] = useState(new Date().toISOString().split('T')[0])
     const [formDescription, setFormDescription] = useState('')
-    const [lines, setLines] = useState<JournalLine[]>([{ ...emptyLine }, { ...emptyLine }])
+    const [lines, setLines] = useState<JournalLineForm[]>([{ ...emptyLine }, { ...emptyLine }])
 
     const totalDebits = lines.reduce((s, l) => s + (parseFloat(l.debit) || 0), 0)
     const totalCredits = lines.reduce((s, l) => s + (parseFloat(l.credit) || 0), 0)
@@ -67,7 +71,13 @@ export default function AsientosPage() {
     const fetchEntries = useCallback(async (page = 1) => {
         setLoading(true)
         const params: Record<string, string> = { page: String(page), limit: '20' }
-        if (periodFilter) params.period = periodFilter
+        if (periodFilter) {
+            // periodFilter llega como 'YYYY-MM' (Input type="month"); el backend filtra por rango de fechas
+            const [y, m] = periodFilter.split('-').map(Number)
+            const lastDay = new Date(y, m, 0).getDate()
+            params.fecha_desde = `${periodFilter}-01`
+            params.fecha_hasta = `${periodFilter}-${String(lastDay).padStart(2, '0')}`
+        }
         const res = await api.get<JournalEntry[]>('/journal-entries', params)
         if (res.status === 1 && res.data) {
             setEntries(Array.isArray(res.data) ? res.data : [])
@@ -80,7 +90,7 @@ export default function AsientosPage() {
 
     const addLine = () => setLines(prev => [...prev, { ...emptyLine }])
     const removeLine = (i: number) => { if (lines.length > 2) setLines(prev => prev.filter((_, idx) => idx !== i)) }
-    const updateLine = (i: number, field: keyof JournalLine, value: string) => {
+    const updateLine = (i: number, field: keyof JournalLineForm, value: string) => {
         setLines(prev => prev.map((l, idx) => idx === i ? { ...l, [field]: value } : l))
     }
 
@@ -100,13 +110,13 @@ export default function AsientosPage() {
         }
         setSaving(true)
         const res = await api.post('/journal-entries', {
-            date: formDate,
-            description: formDescription,
+            fecha: formDate,
+            descripcion: formDescription,
             lines: validLines.map(l => ({
                 account_id: Number(l.account_id),
-                description: l.description,
-                debit: parseFloat(l.debit) || 0,
-                credit: parseFloat(l.credit) || 0,
+                descripcion: l.descripcion,
+                debe: parseFloat(l.debit) || 0,
+                haber: parseFloat(l.credit) || 0,
             })),
         })
         if (res.status === 1) {
@@ -129,34 +139,33 @@ export default function AsientosPage() {
 
     const columns: Column<JournalEntry>[] = [
         {
-            key: 'date',
+            key: 'fecha',
             label: 'Fecha',
             sortable: true,
             render: (v) => <span className="text-sm">{v ? (v as string).split('T')[0] : '-'}</span>,
         },
         {
-            key: 'entry_number',
+            key: 'numero',
             label: 'N° Asiento',
-            render: (v) => <span className="font-mono font-semibold text-sm">{v as string}</span>,
+            render: (v) => <span className="font-mono font-semibold text-sm">{v as number}</span>,
         },
         {
-            key: 'description',
+            key: 'descripcion',
             label: 'Descripcion',
             render: (v) => <span className="text-sm truncate max-w-[250px] block">{v as string}</span>,
         },
         {
-            key: 'total',
+            key: 'total_debe',
             label: 'Total',
             sortable: true,
-            render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span>,
+            render: (v) => <span className="font-semibold">{formatCurrency(Number(v))}</span>,
         },
         {
-            key: 'status',
+            key: 'aprobado',
             label: 'Estado',
-            render: (v) => {
-                const s = statusMap[v as JournalStatus]
-                return s ? <Badge variant={s.variant}>{s.label}</Badge> : <Badge variant="secondary">{v as string}</Badge>
-            },
+            render: (v) => (
+                <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Aprobado' : 'Borrador'}</Badge>
+            ),
         },
     ]
 
@@ -250,8 +259,8 @@ export default function AsientosPage() {
                                                 </td>
                                                 <td className="py-1 pr-2">
                                                     <Input
-                                                        value={line.description}
-                                                        onChange={(e) => updateLine(i, 'description', e.target.value)}
+                                                        value={line.descripcion}
+                                                        onChange={(e) => updateLine(i, 'descripcion', e.target.value)}
                                                         className="h-8"
                                                         placeholder="Descripcion"
                                                     />
@@ -320,18 +329,18 @@ export default function AsientosPage() {
                 <DialogContent className="sm:max-w-lg">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
-                            Asiento {selectedEntry?.entry_number}
+                            Asiento {selectedEntry?.numero}
                             {selectedEntry && (
-                                <Badge variant={statusMap[selectedEntry.status]?.variant}>
-                                    {statusMap[selectedEntry.status]?.label}
+                                <Badge variant={selectedEntry.aprobado ? 'success' : 'secondary'}>
+                                    {selectedEntry.aprobado ? 'Aprobado' : 'Borrador'}
                                 </Badge>
                             )}
                         </DialogTitle>
-                        <DialogDescription>{selectedEntry?.description}</DialogDescription>
+                        <DialogDescription>{selectedEntry?.descripcion}</DialogDescription>
                     </DialogHeader>
                     {selectedEntry && (
                         <div className="space-y-3">
-                            <p className="text-sm text-muted-foreground">Fecha: {selectedEntry.date ? (selectedEntry.date as string).split('T')[0] : '-'}</p>
+                            <p className="text-sm text-muted-foreground">Fecha: {selectedEntry.fecha ? (selectedEntry.fecha as string).split('T')[0] : '-'}</p>
                             <Separator />
                             {selectedEntry.lines && selectedEntry.lines.length > 0 && (
                                 <table className="w-full text-sm">
@@ -347,22 +356,22 @@ export default function AsientosPage() {
                                             <tr key={i} className="border-b border-border">
                                                 <td className="py-1">
                                                     {line.account ? (
-                                                        <span>{line.account.code} — {line.account.name}</span>
+                                                        <span>{line.account.codigo} — {line.account.nombre}</span>
                                                     ) : (
                                                         <span className="text-muted-foreground">#{line.account_id}</span>
                                                     )}
-                                                    {line.description && <span className="text-muted-foreground ml-2 text-xs">({line.description})</span>}
+                                                    {line.descripcion && <span className="text-muted-foreground ml-2 text-xs">({line.descripcion})</span>}
                                                 </td>
-                                                <td className="py-1 text-right">{parseFloat(line.debit) > 0 ? formatCurrency(parseFloat(line.debit)) : '-'}</td>
-                                                <td className="py-1 text-right">{parseFloat(line.credit) > 0 ? formatCurrency(parseFloat(line.credit)) : '-'}</td>
+                                                <td className="py-1 text-right">{Number(line.debe) > 0 ? formatCurrency(Number(line.debe)) : '-'}</td>
+                                                <td className="py-1 text-right">{Number(line.haber) > 0 ? formatCurrency(Number(line.haber)) : '-'}</td>
                                             </tr>
                                         ))}
                                     </tbody>
                                     <tfoot>
                                         <tr className="border-t-2 border-border font-semibold">
                                             <td className="pt-1">Total</td>
-                                            <td className="pt-1 text-right">{formatCurrency(selectedEntry.total)}</td>
-                                            <td className="pt-1 text-right">{formatCurrency(selectedEntry.total)}</td>
+                                            <td className="pt-1 text-right">{formatCurrency(Number(selectedEntry.total_debe))}</td>
+                                            <td className="pt-1 text-right">{formatCurrency(Number(selectedEntry.total_haber))}</td>
                                         </tr>
                                     </tfoot>
                                 </table>

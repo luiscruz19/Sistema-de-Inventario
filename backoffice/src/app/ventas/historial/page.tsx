@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
 import { formatCurrency, formatDateTime } from '@/lib/utils'
-import { Eye, XCircle, FileText } from 'lucide-react'
+import { printTicket } from '@/lib/print-ticket'
+import { Eye, XCircle, FileText, Printer } from 'lucide-react'
 import Link from 'next/link'
 import type { Sale, SaleItem, Pagination } from '@/types'
 
@@ -80,7 +81,7 @@ export default function HistorialVentasPage() {
         { key: 'customer', label: 'Cliente', render: (_, row) => row.customer?.name || 'Consumidor final' },
         { key: 'items', label: 'Items', render: (_, row) => row.items?.length || '-' },
         { key: 'total', label: 'Total', sortable: true, render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span> },
-        { key: 'payment_method', label: 'Pago', render: (v) => methodMap[v as string] || v },
+        { key: 'payment_method', label: 'Pago', render: (v) => methodMap[v as string] || String(v) },
         { key: 'status', label: 'Estado', render: (v) => {
             const s = statusMap[v as string]
             return s ? <Badge variant={s.variant}>{s.label}</Badge> : <Badge variant="secondary">{v as string}</Badge>
@@ -141,7 +142,7 @@ export default function HistorialVentasPage() {
 
             {/* Sale detail modal */}
             <Dialog open={!!selectedSale} onOpenChange={() => setSelectedSale(null)}>
-                <DialogContent className="sm:max-w-lg">
+                <DialogContent className="sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>Detalle de venta {selectedSale?.sale_number}</DialogTitle>
                         <DialogDescription>Informacion completa de la venta</DialogDescription>
@@ -174,8 +175,20 @@ export default function HistorialVentasPage() {
                         </div>
                     )}
                     <DialogFooter className="flex gap-2">
+                        <Button variant="outline" onClick={() => selectedSale && printTicket({
+                            number: selectedSale.sale_number || `#${selectedSale.id}`,
+                            date: selectedSale.createdAt ? formatDateTime(selectedSale.createdAt) : '',
+                            customer: selectedSale.customer?.name || 'Consumidor Final',
+                            items: detailItems.map(i => ({ name: i.product?.name || `Producto #${i.product_id}`, quantity: i.quantity, unitPrice: Number(i.unit_price) })),
+                            subtotal: Number(selectedSale.subtotal),
+                            iva: Number(selectedSale.tax_amount),
+                            total: Number(selectedSale.total),
+                            payments: [{ method: selectedSale.payment_method, amount: Number(selectedSale.total) }],
+                        })}>
+                            <Printer className="h-4 w-4 mr-2" /> Imprimir
+                        </Button>
                         {selectedSale?.status === 'completed' && (
-                            <Link href={`/inventario/facturacion/emitir?sale_id=${selectedSale.id}`}>
+                            <Link href={`/facturacion/emitir?sale_id=${selectedSale.id}`}>
                                 <Button variant="outline" onClick={() => setSelectedSale(null)}>
                                     <FileText className="h-4 w-4 mr-2" /> Emitir factura
                                 </Button>

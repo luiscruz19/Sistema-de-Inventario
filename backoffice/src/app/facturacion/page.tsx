@@ -67,10 +67,10 @@ export default function FacturacionPage() {
             label: '',
             render: (_, row) => (
                 <div className="flex gap-2 justify-end">
-                    <Link href={`/inventario/facturacion/${row.id}`}>
+                    <Link href={`/facturacion/${row.id}`}>
                         <Button variant="outline" size="sm"><Eye className="h-4 w-4" /></Button>
                     </Link>
-                    <a href={`/inventario/api/invoices/${row.id}/pdf`} target="_blank" rel="noreferrer">
+                    <a href={`/api/invoices/${row.id}/pdf`} target="_blank" rel="noreferrer">
                         <Button variant="outline" size="sm"><Download className="h-4 w-4" /></Button>
                     </a>
                 </div>
@@ -87,7 +87,7 @@ export default function FacturacionPage() {
                     </h1>
                     <p className="text-sm text-muted-foreground">Comprobantes emitidos — AFIP / ARCA</p>
                 </div>
-                <Link href="/inventario/facturacion/emitir">
+                <Link href="/facturacion/emitir">
                     <Button><Plus className="h-4 w-4 mr-2" /> Emitir factura</Button>
                 </Link>
             </div>

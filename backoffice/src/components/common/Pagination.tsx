@@ -34,7 +34,7 @@ export function Pagination({ currentPage, totalPages, totalItems, perPage, onPag
 
     return (
         <div className="flex items-center justify-between px-2 py-4">
-            <div className="text-sm text-gray-500">
+            <div className="text-sm text-muted-foreground">
                 Mostrando <span className="font-medium">{startItem}</span> a{' '}
                 <span className="font-medium">{endItem}</span> de{' '}
                 <span className="font-medium">{totalItems}</span>

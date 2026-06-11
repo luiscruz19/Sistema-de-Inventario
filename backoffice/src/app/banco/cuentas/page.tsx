@@ -14,46 +14,46 @@ import { formatCurrency } from '@/lib/utils'
 import { Plus, Pencil, Trash2, Building } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-type BankAccountType = 'corriente' | 'caja_ahorro' | 'virtual'
+type BankAccountType = 'corriente' | 'caja_ahorro' | 'cuenta_sueldo' | 'inversion'
 
 type BankAccount = {
     id: number
-    name: string
-    bank: string
-    type: BankAccountType
-    currency: string
-    cbu: string
-    alias: string
-    initial_balance: number
-    calculated_balance?: number
-    active: boolean
+    nombre: string
+    banco: string
+    numero_cuenta: string | null
+    cbu_cvu: string | null
+    tipo: BankAccountType
+    moneda: string
+    saldo_inicial: number | string
+    activa: boolean
     createdAt: string
 }
 
 type BankAccountForm = {
-    name: string
-    bank: string
-    type: BankAccountType
-    currency: string
-    cbu: string
-    alias: string
-    initial_balance: string
+    nombre: string
+    banco: string
+    numero_cuenta: string
+    tipo: BankAccountType
+    moneda: string
+    cbu_cvu: string
+    saldo_inicial: string
 }
 
 const emptyForm: BankAccountForm = {
-    name: '',
-    bank: '',
-    type: 'corriente',
-    currency: 'ARS',
-    cbu: '',
-    alias: '',
-    initial_balance: '0',
+    nombre: '',
+    banco: '',
+    numero_cuenta: '',
+    tipo: 'corriente',
+    moneda: 'ARS',
+    cbu_cvu: '',
+    saldo_inicial: '0',
 }
 
 const typeMap: Record<BankAccountType, string> = {
     corriente: 'Cuenta corriente',
     caja_ahorro: 'Caja de ahorro',
-    virtual: 'Cuenta virtual',
+    cuenta_sueldo: 'Cuenta sueldo',
+    inversion: 'Inversion',
 }
 
 export default function CuentasBancariasPage() {
@@ -87,24 +87,32 @@ export default function CuentasBancariasPage() {
     const openEdit = (acc: BankAccount) => {
         setEditing(acc)
         setForm({
-            name: acc.name,
-            bank: acc.bank,
-            type: acc.type,
-            currency: acc.currency,
-            cbu: acc.cbu || '',
-            alias: acc.alias || '',
-            initial_balance: String(acc.initial_balance),
+            nombre: acc.nombre,
+            banco: acc.banco,
+            numero_cuenta: acc.numero_cuenta || '',
+            tipo: acc.tipo,
+            moneda: acc.moneda,
+            cbu_cvu: acc.cbu_cvu || '',
+            saldo_inicial: String(acc.saldo_inicial),
         })
         setShowModal(true)
     }
 
     const handleSave = async () => {
-        if (!form.name.trim() || !form.bank.trim()) {
+        if (!form.nombre.trim() || !form.banco.trim()) {
             toast({ title: 'Nombre y banco son obligatorios', variant: 'destructive' })
             return
         }
         setSaving(true)
-        const body = { ...form, initial_balance: parseFloat(form.initial_balance) || 0 }
+        const body = {
+            nombre: form.nombre,
+            banco: form.banco,
+            numero_cuenta: form.numero_cuenta || null,
+            cbu_cvu: form.cbu_cvu || null,
+            tipo: form.tipo,
+            moneda: form.moneda,
+            saldo_inicial: parseFloat(form.saldo_inicial) || 0,
+        }
         const res = editing
             ? await api.put(`/bank-accounts/${editing.id}`, body)
             : await api.post('/bank-accounts', body)
@@ -131,41 +139,41 @@ export default function CuentasBancariasPage() {
 
     const columns: Column<BankAccount>[] = [
         {
-            key: 'name',
+            key: 'nombre',
             label: 'Nombre',
             render: (v) => <span className="font-medium">{v as string}</span>,
         },
         {
-            key: 'bank',
+            key: 'banco',
             label: 'Banco',
             render: (v) => <span className="text-sm">{v as string}</span>,
         },
         {
-            key: 'type',
+            key: 'tipo',
             label: 'Tipo',
             render: (v) => <Badge variant="secondary">{typeMap[v as BankAccountType] || v as string}</Badge>,
         },
         {
-            key: 'currency',
+            key: 'moneda',
             label: 'Moneda',
             render: (v) => <span className="font-mono text-sm">{v as string}</span>,
         },
         {
-            key: 'cbu',
-            label: 'CBU / Alias',
+            key: 'cbu_cvu',
+            label: 'CBU / Cuenta',
             render: (_, row) => (
                 <div className="text-sm">
-                    {row.cbu && <div className="font-mono text-xs text-muted-foreground">{row.cbu}</div>}
-                    {row.alias && <div className="text-muted-foreground">{row.alias}</div>}
-                    {!row.cbu && !row.alias && '-'}
+                    {row.cbu_cvu && <div className="font-mono text-xs text-muted-foreground">{row.cbu_cvu}</div>}
+                    {row.numero_cuenta && <div className="text-muted-foreground">{row.numero_cuenta}</div>}
+                    {!row.cbu_cvu && !row.numero_cuenta && '-'}
                 </div>
             ),
         },
         {
-            key: 'calculated_balance',
+            key: 'saldo_inicial',
             label: 'Saldo',
-            render: (v, row) => {
-                const balance = (v as number) ?? row.initial_balance
+            render: (v) => {
+                const balance = Number(v) || 0
                 return (
                     <span className={`font-semibold ${balance >= 0 ? 'text-success' : 'text-destructive'}`}>
                         {formatCurrency(balance)}
@@ -217,26 +225,27 @@ export default function CuentasBancariasPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
                             <Label>Nombre *</Label>
-                            <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" autoFocus placeholder="Ej: Cuenta operativa Banco Nacion" />
+                            <Input value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} className="mt-1" autoFocus placeholder="Ej: Cuenta operativa Banco Nacion" />
                         </div>
                         <div>
                             <Label>Banco *</Label>
-                            <Input value={form.bank} onChange={(e) => setForm(f => ({ ...f, bank: e.target.value }))} className="mt-1" placeholder="Ej: Banco Nacion" />
+                            <Input value={form.banco} onChange={(e) => setForm(f => ({ ...f, banco: e.target.value }))} className="mt-1" placeholder="Ej: Banco Nacion" />
                         </div>
                         <div>
                             <Label>Tipo</Label>
-                            <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v as BankAccountType }))}>
+                            <Select value={form.tipo} onValueChange={(v) => setForm(f => ({ ...f, tipo: v as BankAccountType }))}>
                                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="corriente">Cuenta corriente</SelectItem>
                                     <SelectItem value="caja_ahorro">Caja de ahorro</SelectItem>
-                                    <SelectItem value="virtual">Cuenta virtual</SelectItem>
+                                    <SelectItem value="cuenta_sueldo">Cuenta sueldo</SelectItem>
+                                    <SelectItem value="inversion">Inversion</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
                         <div>
                             <Label>Moneda</Label>
-                            <Select value={form.currency} onValueChange={(v) => setForm(f => ({ ...f, currency: v }))}>
+                            <Select value={form.moneda} onValueChange={(v) => setForm(f => ({ ...f, moneda: v }))}>
                                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="ARS">ARS (Pesos)</SelectItem>
@@ -247,15 +256,15 @@ export default function CuentasBancariasPage() {
                         </div>
                         <div>
                             <Label>Saldo inicial</Label>
-                            <Input type="number" value={form.initial_balance} onChange={(e) => setForm(f => ({ ...f, initial_balance: e.target.value }))} className="mt-1" />
+                            <Input type="number" value={form.saldo_inicial} onChange={(e) => setForm(f => ({ ...f, saldo_inicial: e.target.value }))} className="mt-1" />
                         </div>
                         <div>
-                            <Label>CBU</Label>
-                            <Input value={form.cbu} onChange={(e) => setForm(f => ({ ...f, cbu: e.target.value }))} className="mt-1 font-mono" placeholder="22 digitos" />
+                            <Label>CBU / CVU</Label>
+                            <Input value={form.cbu_cvu} onChange={(e) => setForm(f => ({ ...f, cbu_cvu: e.target.value }))} className="mt-1 font-mono" placeholder="22 digitos" />
                         </div>
                         <div>
-                            <Label>Alias</Label>
-                            <Input value={form.alias} onChange={(e) => setForm(f => ({ ...f, alias: e.target.value }))} className="mt-1" placeholder="alias.de.la.cuenta" />
+                            <Label>Numero de cuenta</Label>
+                            <Input value={form.numero_cuenta} onChange={(e) => setForm(f => ({ ...f, numero_cuenta: e.target.value }))} className="mt-1" placeholder="Ej: 123-456/7" />
                         </div>
                     </div>
                     <DialogFooter>

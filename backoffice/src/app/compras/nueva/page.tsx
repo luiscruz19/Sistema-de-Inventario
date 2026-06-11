@@ -11,10 +11,11 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { ProductPicker } from '@/components/common/ProductPicker'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Trash2, ArrowLeft } from 'lucide-react'
 import Link from 'next/link'
-import type { Supplier, Branch, Product } from '@/types'
+import type { Supplier, Branch } from '@/types'
 
 interface OrderItem { product_id: string; variant_id: string; quantity: string; unit_cost: string }
 
@@ -23,7 +24,6 @@ export default function NuevaCompraPage() {
     const router = useRouter()
     const [suppliers, setSuppliers] = useState<Supplier[]>([])
     const [branches, setBranches] = useState<Branch[]>([])
-    const [products, setProducts] = useState<Product[]>([])
     const [supplierId, setSupplierId] = useState('')
     const [branchId, setBranchId] = useState('')
     const [expectedDate, setExpectedDate] = useState('')
@@ -35,17 +35,16 @@ export default function NuevaCompraPage() {
         Promise.all([
             api.get<Supplier[]>('/suppliers', { active: 'true', limit: '200' }),
             api.get<Branch[]>('/branches'),
-            api.get<Product[]>('/products', { active: 'true', limit: '500' }),
-        ]).then(([sr, br, pr]) => {
+        ]).then(([sr, br]) => {
             if (sr.status === 1 && sr.data) setSuppliers(Array.isArray(sr.data) ? sr.data : [])
             if (br.status === 1 && br.data) setBranches(Array.isArray(br.data) ? br.data : [])
-            if (pr.status === 1 && pr.data) setProducts(Array.isArray(pr.data) ? pr.data : [])
         })
     }, [api])
 
-    const addItem = () => setItems([...items, { product_id: '', variant_id: '', quantity: '1', unit_cost: '' }])
-    const removeItem = (idx: number) => setItems(items.filter((_, i) => i !== idx))
-    const updateItem = (idx: number, field: string, value: string) => setItems(items.map((it, i) => i === idx ? { ...it, [field]: value } : it))
+    const addItem = () => setItems(prev => [...prev, { product_id: '', variant_id: '', quantity: '1', unit_cost: '' }])
+    const removeItem = (idx: number) => setItems(prev => prev.filter((_, i) => i !== idx))
+    // Update funcional: permite varias llamadas seguidas (product_id + unit_cost) sin pisarse.
+    const updateItem = (idx: number, field: string, value: string) => setItems(prev => prev.map((it, i) => i === idx ? { ...it, [field]: value } : it))
 
     const subtotal = items.reduce((s, i) => {
         const qty = parseFloat(i.quantity) || 0
@@ -75,7 +74,7 @@ export default function NuevaCompraPage() {
         setSaving(false)
         if (res.status === 1) {
             toast({ title: 'Orden de compra creada', variant: 'success' })
-            router.push('/inventario/compras')
+            router.push('/compras')
         } else {
             toast({ title: 'Error', description: res.message, variant: 'destructive' })
         }
@@ -84,7 +83,7 @@ export default function NuevaCompraPage() {
     return (
         <div>
             <div className="flex items-center gap-3 mb-6">
-                <Link href="/inventario/compras"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
+                <Link href="/compras"><Button variant="ghost" size="icon"><ArrowLeft className="h-4 w-4" /></Button></Link>
                 <h1 className="text-2xl font-semibold tracking-tight">Nueva Orden de Compra</h1>
             </div>
 
@@ -129,19 +128,15 @@ export default function NuevaCompraPage() {
                             ) : (
                                 <div className="space-y-3">
                                     {items.map((item, idx) => {
-                                        const product = products.find(p => String(p.id) === item.product_id)
                                         return (
                                             <div key={idx} className="grid grid-cols-12 gap-2 items-end p-3 bg-muted rounded-lg">
                                                 <div className="col-span-5">
-                                                    <Label className="text-xs">Producto</Label>
-                                                    <Select value={item.product_id} onValueChange={(v) => {
-                                                        const p = products.find(pr => String(pr.id) === v)
-                                                        updateItem(idx, 'product_id', v)
-                                                        if (p) updateItem(idx, 'unit_cost', String(p.cost_price))
-                                                    }}>
-                                                        <SelectTrigger className="mt-1 h-8"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                                                        <SelectContent>{products.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
-                                                    </Select>
+                                                    <Label className="mb-1 block text-xs">Producto</Label>
+                                                    <ProductPicker onChange={(p) => {
+                                                        if (!p) return
+                                                        updateItem(idx, 'product_id', String(p.id))
+                                                        updateItem(idx, 'unit_cost', String(p.cost_price))
+                                                    }} />
                                                 </div>
                                                 <div className="col-span-2">
                                                     <Label className="text-xs">Cantidad</Label>

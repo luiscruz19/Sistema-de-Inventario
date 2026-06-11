@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { AlertTriangle, Package } from 'lucide-react'
-import type { Product } from '@/types'
+import type { Product, Stock } from '@/types'
 
 export default function AlertasPage() {
     const api = useApi()
@@ -15,8 +15,30 @@ export default function AlertasPage() {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        api.get<Product[]>('/alerts').then(res => {
-            if (res.status === 1 && res.data) setAlerts(Array.isArray(res.data) ? res.data : [])
+        // El backend (stock service, lowStockAlerts) devuelve un array de registros Stock,
+        // cada uno con su product/branch anidados y quantity/reserved_quantity como strings.
+        // Lo agrupamos por producto para construir la forma Product[] que consume la UI.
+        api.get<Stock[]>('/alerts').then(res => {
+            if (res.status === 1 && Array.isArray(res.data)) {
+                const byProduct = new Map<number, Product>()
+                for (const record of res.data) {
+                    const product = record.product
+                    if (!product) continue
+                    const current = byProduct.get(product.id) ?? { ...product, stockEntries: [] as Stock[] }
+                    current.stockEntries!.push({
+                        id: record.id,
+                        product_id: record.product_id,
+                        variant_id: record.variant_id,
+                        branch_id: record.branch_id,
+                        quantity: Number(record.quantity),
+                        reserved_quantity: Number(record.reserved_quantity),
+                        branch: record.branch,
+                        variant: record.variant,
+                    })
+                    byProduct.set(product.id, current)
+                }
+                setAlerts(Array.from(byProduct.values()))
+            }
             setLoading(false)
         })
     }, [api])

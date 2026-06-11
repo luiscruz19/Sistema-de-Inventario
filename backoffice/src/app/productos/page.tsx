@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
-import { DataTable, type Column } from '@/components/common/DataTable'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,9 +12,16 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { StockBadge } from '@/components/common/StockBadge'
+import { EmptyState } from '@/components/common/EmptyState'
+import { Pagination } from '@/components/common/Pagination'
+import { PageHead } from '@/components/common/PageHead'
+import { ProductThumb } from '@/components/common/ProductThumb'
+import { useScreenActions } from '@/components/command/screen-actions'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Pencil, Trash2, Package } from 'lucide-react'
-import type { Product, ProductVariant, Category, Pagination } from '@/types'
+import { Plus, Pencil, Trash2, Search, PackageX } from 'lucide-react'
+import type { Product, Category, Pagination as PaginationType } from '@/types'
 
 type ProductForm = {
     name: string; sku: string; barcode: string; description: string; category_id: string;
@@ -30,15 +36,19 @@ const emptyForm: ProductForm = {
     image_url: '', track_stock: true, active: true, variants: [],
 }
 
+const stockOf = (p: Product): number | null => {
+    if (!p.track_stock) return null
+    return p.stockEntries?.reduce((acc, e) => acc + Number(e.quantity) - Number(e.reserved_quantity), 0) ?? null
+}
+
 export default function ProductosPage() {
     const api = useApi()
     const [products, setProducts] = useState<Product[]>([])
     const [categories, setCategories] = useState<Category[]>([])
-    const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
+    const [pagination, setPagination] = useState<PaginationType>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
     const [loading, setLoading] = useState(true)
     const [search, setSearch] = useState('')
     const [catFilter, setCatFilter] = useState('')
-    const [activeFilter, setActiveFilter] = useState('')
     const [showModal, setShowModal] = useState(false)
     const [editing, setEditing] = useState<Product | null>(null)
     const [form, setForm] = useState<ProductForm>(emptyForm)
@@ -49,20 +59,19 @@ export default function ProductosPage() {
         const params: Record<string, string> = { page: String(page), limit: '20' }
         if (search) params.search = search
         if (catFilter) params.category_id = catFilter
-        if (activeFilter) params.active = activeFilter
         const res = await api.get<Product[]>('/products', params)
         if (res.status === 1 && res.data) {
             setProducts(Array.isArray(res.data) ? res.data : [])
             if (res.pagination) setPagination(res.pagination)
         }
         setLoading(false)
-    }, [api, search, catFilter, activeFilter])
+    }, [api, search, catFilter])
 
-    useEffect(() => { fetchProducts() }, [fetchProducts])
+    useEffect(() => { fetchProducts(1) }, [fetchProducts])
 
     useEffect(() => {
         api.get<Category[]>('/categories').then(res => {
-            if (res.status === 1 && res.data) setCategories(Array.isArray(res.data) ? res.data : [])
+            if (res.status === 1 && Array.isArray(res.data)) setCategories(res.data)
         })
     }, [api])
 
@@ -101,9 +110,7 @@ export default function ProductosPage() {
                 sale_price: v.sale_price ? parseFloat(v.sale_price) : null,
             })),
         }
-        const res = editing
-            ? await api.put(`/products/${editing.id}`, body)
-            : await api.post('/products', body)
+        const res = editing ? await api.put(`/products/${editing.id}`, body) : await api.post('/products', body)
         setSaving(false)
         if (res.status === 1) {
             toast({ title: editing ? 'Producto actualizado' : 'Producto creado', variant: 'success' })
@@ -115,7 +122,7 @@ export default function ProductosPage() {
     }
 
     const handleDelete = async (id: number) => {
-        if (!confirm('Eliminar producto?')) return
+        if (!confirm('¿Eliminar producto?')) return
         const res = await api.del(`/products/${id}`)
         if (res.status === 1) { toast({ title: 'Producto eliminado', variant: 'success' }); fetchProducts(pagination.currentPage) }
         else toast({ title: 'Error', description: res.message, variant: 'destructive' })
@@ -127,86 +134,118 @@ export default function ProductosPage() {
         ...f, variants: f.variants.map((v, i) => i === idx ? { ...v, [field]: value } : v),
     }))
 
-    const columns: Column<Product>[] = [
-        { key: 'name', label: 'Producto', sortable: true, render: (_, row) => (
-            <div className="flex items-center gap-3">
-                <div className="w-9 h-9 bg-muted rounded-lg flex items-center justify-center"><Package className="h-4 w-4 text-muted-foreground" /></div>
-                <div>
-                    <p className="font-medium">{row.name}</p>
-                    {row.variants && row.variants.length > 0 && <p className="text-xs text-muted-foreground">{row.variants.length} variantes</p>}
-                </div>
-            </div>
-        )},
-        { key: 'sku', label: 'SKU', render: (v) => <span className="text-muted-foreground font-mono text-xs">{(v as string) || '-'}</span> },
-        { key: 'category', label: 'Categoria', render: (_, row) => row.category?.name || '-' },
-        { key: 'sale_price', label: 'Precio', sortable: true, render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span> },
-        { key: 'cost_price', label: 'Costo', sortable: true, render: (v) => <span className="text-muted-foreground">{formatCurrency(v as number)}</span> },
-        { key: 'active', label: 'Estado', render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activo' : 'Inactivo'}</Badge> },
-    ]
+    useScreenActions({
+        primary: { label: 'Nuevo producto', icon: Plus, run: openCreate },
+        search: () => document.getElementById('productos-search')?.focus(),
+        searchLabel: 'Buscar productos',
+    }, [])
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Productos</h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">Catalogo, precios y variantes</p>
+            <PageHead title="Productos" sub={`${pagination.totalItems} ${pagination.totalItems === 1 ? 'producto' : 'productos'}`}>
+                <Button onClick={openCreate}><Plus className="mr-2 h-[15px] w-[15px]" /> Nuevo producto</Button>
+            </PageHead>
+
+            <div className="mb-3.5 flex flex-wrap gap-2.5">
+                <div className="relative w-full max-w-[320px] flex-1 min-w-[220px]">
+                    <Search className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-muted-foreground" />
+                    <Input id="productos-search" className="pl-9" placeholder="Buscar por nombre o SKU..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
-                <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nuevo producto</Button>
+                <div className="w-[200px]">
+                    <Select value={catFilter || '__all__'} onValueChange={v => setCatFilter(v === '__all__' ? '' : v)}>
+                        <SelectTrigger><SelectValue placeholder="Todas las categorías" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__all__">Todas las categorías</SelectItem>
+                            {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
-            <DataTable
-                data={products}
-                columns={columns}
-                pagination={pagination}
-                onPageChange={(p) => fetchProducts(p)}
-                searchValue={search}
-                onSearchChange={setSearch}
-                searchPlaceholder="Buscar por nombre, SKU o codigo de barras..."
-                filters={[
-                    { key: 'category', label: 'Categoria', options: categories.map(c => ({ value: String(c.id), label: c.name })) },
-                    { key: 'active', label: 'Estado', options: [{ value: 'true', label: 'Activos' }, { value: 'false', label: 'Inactivos' }] },
-                ]}
-                filterValues={{ category: catFilter, active: activeFilter }}
-                onFilterChange={(k, v) => { if (k === 'category') setCatFilter(v); if (k === 'active') setActiveFilter(v) }}
-                isLoading={loading}
-                emptyMessage="No se encontraron productos"
-                actions={(row) => (
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                )}
-            />
+            {loading ? (
+                <div className="h-64 animate-pulse rounded-xl border bg-muted/30" />
+            ) : products.length === 0 ? (
+                <EmptyState icon={PackageX} title="Sin resultados" description="No hay productos que coincidan con el filtro." action={<Button size="sm" onClick={openCreate}>Nuevo producto</Button>} />
+            ) : (
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Producto</TableHead>
+                                <TableHead>SKU</TableHead>
+                                <TableHead>Categoría</TableHead>
+                                <TableHead>Precio</TableHead>
+                                <TableHead>Stock</TableHead>
+                                <TableHead className="w-px text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {products.map(p => {
+                                const stock = stockOf(p)
+                                return (
+                                    <TableRow key={p.id}>
+                                        <TableCell>
+                                            <div className="flex items-center gap-3">
+                                                <ProductThumb src={p.image_url} />
+                                                <div className="min-w-0">
+                                                    <p className="font-medium">{p.name}</p>
+                                                    {p.variants && p.variants.length > 0 && <p className="text-xs text-muted-foreground">{p.variants.length} variantes</p>}
+                                                </div>
+                                            </div>
+                                        </TableCell>
+                                        <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">{p.sku || '—'}</TableCell>
+                                        <TableCell>{p.category?.name ? <Badge variant="secondary">{p.category.name}</Badge> : <span className="text-muted-foreground">—</span>}</TableCell>
+                                        <TableCell className="tabular-nums">{formatCurrency(p.sale_price)}</TableCell>
+                                        <TableCell>{stock === null ? <span className="text-sm text-muted-foreground">No controla</span> : <StockBadge quantity={stock} minAlert={p.min_stock_alert} />}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(p)}><Pencil className="h-4 w-4" /></Button>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" onClick={() => handleDelete(p.id)}><Trash2 className="h-4 w-4" /></Button>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
 
-            {/* Product modal */}
+            {!loading && products.length > 0 && (
+                <div className="mt-3.5">
+                    <Pagination currentPage={pagination.currentPage} totalPages={pagination.totalPages} totalItems={pagination.totalItems} perPage={pagination.perPage} onPageChange={fetchProducts} />
+                </div>
+            )}
+
+            {/* Modal de producto */}
             <Dialog open={showModal} onOpenChange={setShowModal}>
-                <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto">
+                <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
                     <DialogHeader>
                         <DialogTitle>{editing ? 'Editar producto' : 'Nuevo producto'}</DialogTitle>
-                        <DialogDescription>Completa los datos del producto</DialogDescription>
+                        <DialogDescription>Completá los datos del producto.</DialogDescription>
                     </DialogHeader>
                     <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                             <div className="col-span-2">
-                                <Label>Nombre *</Label>
-                                <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+                                <Label className="mb-1.5 block" required>Nombre</Label>
+                                <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} />
                             </div>
-                            <div><Label>SKU</Label><Input value={form.sku} onChange={(e) => setForm(f => ({ ...f, sku: e.target.value }))} className="mt-1" /></div>
-                            <div><Label>Codigo de barras</Label><Input value={form.barcode} onChange={(e) => setForm(f => ({ ...f, barcode: e.target.value }))} className="mt-1" /></div>
+                            <div><Label className="mb-1.5 block">SKU</Label><Input value={form.sku} onChange={(e) => setForm(f => ({ ...f, sku: e.target.value }))} /></div>
+                            <div><Label className="mb-1.5 block">Código de barras</Label><Input value={form.barcode} onChange={(e) => setForm(f => ({ ...f, barcode: e.target.value }))} /></div>
                             <div>
-                                <Label>Categoria</Label>
-                                <Select value={form.category_id} onValueChange={(v) => setForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
-                                    <SelectTrigger className="mt-1"><SelectValue placeholder="Sin categoria" /></SelectTrigger>
+                                <Label className="mb-1.5 block">Categoría</Label>
+                                <Select value={form.category_id || '__none__'} onValueChange={(v) => setForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
+                                    <SelectTrigger><SelectValue placeholder="Sin categoría" /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="__none__">Sin categoria</SelectItem>
+                                        <SelectItem value="__none__">Sin categoría</SelectItem>
                                         {categories.map(c => <SelectItem key={c.id} value={String(c.id)}>{c.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
-                                <Label>Unidad</Label>
+                                <Label className="mb-1.5 block">Unidad</Label>
                                 <Select value={form.unit} onValueChange={(v) => setForm(f => ({ ...f, unit: v }))}>
-                                    <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                                    <SelectTrigger><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="UN">Unidad</SelectItem>
                                         <SelectItem value="KG">Kilogramo</SelectItem>
@@ -215,15 +254,15 @@ export default function ProductosPage() {
                                     </SelectContent>
                                 </Select>
                             </div>
-                            <div><Label>Costo</Label><Input type="number" min={0} step={0.01} value={form.cost_price} onChange={(e) => setForm(f => ({ ...f, cost_price: e.target.value }))} className="mt-1" /></div>
-                            <div><Label>Precio de venta</Label><Input type="number" min={0} step={0.01} value={form.sale_price} onChange={(e) => setForm(f => ({ ...f, sale_price: e.target.value }))} className="mt-1" /></div>
-                            <div><Label>IVA (%)</Label><Input type="number" min={0} step={0.01} value={form.tax_rate} onChange={(e) => setForm(f => ({ ...f, tax_rate: e.target.value }))} className="mt-1" /></div>
-                            <div><Label>Alerta stock minimo</Label><Input type="number" min={0} value={form.min_stock_alert} onChange={(e) => setForm(f => ({ ...f, min_stock_alert: e.target.value }))} className="mt-1" /></div>
+                            <div><Label className="mb-1.5 block">Costo</Label><Input type="number" min={0} step={0.01} value={form.cost_price} onChange={(e) => setForm(f => ({ ...f, cost_price: e.target.value }))} /></div>
+                            <div><Label className="mb-1.5 block" required>Precio de venta</Label><Input type="number" min={0} step={0.01} value={form.sale_price} onChange={(e) => setForm(f => ({ ...f, sale_price: e.target.value }))} /></div>
+                            <div><Label className="mb-1.5 block">IVA (%)</Label><Input type="number" min={0} step={0.01} value={form.tax_rate} onChange={(e) => setForm(f => ({ ...f, tax_rate: e.target.value }))} /></div>
+                            <div><Label className="mb-1.5 block">Alerta stock mínimo</Label><Input type="number" min={0} value={form.min_stock_alert} onChange={(e) => setForm(f => ({ ...f, min_stock_alert: e.target.value }))} /></div>
                             <div className="col-span-2">
-                                <Label>Descripcion</Label>
-                                <Textarea value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} className="mt-1" rows={2} />
+                                <Label className="mb-1.5 block">Descripción</Label>
+                                <Textarea value={form.description} onChange={(e) => setForm(f => ({ ...f, description: e.target.value }))} rows={2} />
                             </div>
-                            <div className="col-span-2"><Label>URL de imagen</Label><Input value={form.image_url} onChange={(e) => setForm(f => ({ ...f, image_url: e.target.value }))} className="mt-1" placeholder="https://..." /></div>
+                            <div className="col-span-2"><Label className="mb-1.5 block">URL de imagen</Label><Input value={form.image_url} onChange={(e) => setForm(f => ({ ...f, image_url: e.target.value }))} placeholder="https://..." /></div>
                         </div>
                         <div className="flex items-center gap-6">
                             <label className="flex items-center gap-2 text-sm">
@@ -236,16 +275,16 @@ export default function ProductosPage() {
 
                         <Separator />
                         <div>
-                            <div className="flex items-center justify-between mb-3">
+                            <div className="mb-3 flex items-center justify-between">
                                 <Label className="text-base">Variantes</Label>
-                                <Button variant="outline" size="sm" onClick={addVariant}><Plus className="h-3 w-3 mr-1" /> Agregar</Button>
+                                <Button variant="outline" size="sm" onClick={addVariant}><Plus className="mr-1 h-3 w-3" /> Agregar</Button>
                             </div>
                             {form.variants.length === 0 ? (
                                 <p className="text-sm text-muted-foreground">Sin variantes (producto simple)</p>
                             ) : (
                                 <div className="space-y-3">
                                     {form.variants.map((v, idx) => (
-                                        <div key={idx} className="grid grid-cols-6 gap-2 items-end p-3 bg-muted rounded-lg">
+                                        <div key={idx} className="grid grid-cols-6 items-end gap-2 rounded-lg bg-muted p-3">
                                             <div className="col-span-2"><Label className="text-xs">Nombre</Label><Input value={v.name} onChange={(e) => updateVariant(idx, 'name', e.target.value)} className="mt-1 h-8 text-sm" /></div>
                                             <div><Label className="text-xs">SKU</Label><Input value={v.sku} onChange={(e) => updateVariant(idx, 'sku', e.target.value)} className="mt-1 h-8 text-sm" /></div>
                                             <div><Label className="text-xs">Costo</Label><Input type="number" value={v.cost_price} onChange={(e) => updateVariant(idx, 'cost_price', e.target.value)} className="mt-1 h-8 text-sm" /></div>

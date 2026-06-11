@@ -18,26 +18,26 @@ type MarketplacePlatform = 'mercadolibre' | 'tiendanube' | 'shopify' | 'woocomme
 
 type MarketplaceConnection = {
     id: number
-    platform: MarketplacePlatform
-    name: string
+    marketplace: MarketplacePlatform
+    nombre: string
     shop_url: string
-    active: boolean
-    last_sync?: string
+    activa: boolean
+    ultimo_sync_at?: string
     createdAt: string
 }
 
 type ConnectionForm = {
-    platform: MarketplacePlatform
-    name: string
+    marketplace: MarketplacePlatform
+    nombre: string
     shop_url: string
-    active: boolean
+    activa: boolean
 }
 
 const emptyForm: ConnectionForm = {
-    platform: 'mercadolibre',
-    name: '',
+    marketplace: 'mercadolibre',
+    nombre: '',
     shop_url: '',
-    active: true,
+    activa: true,
 }
 
 const platformMap: Record<MarketplacePlatform, { label: string; color: string }> = {
@@ -60,7 +60,7 @@ export default function MarketplaceConexionesPage() {
 
     const fetchConnections = useCallback(async (page = 1) => {
         setLoading(true)
-        const res = await api.get<MarketplaceConnection[]>('/marketplace-connections', { page: String(page), limit: '20' })
+        const res = await api.get<MarketplaceConnection[]>('/marketplace/connections', { page: String(page), limit: '20' })
         if (res.status === 1 && res.data) {
             setConnections(Array.isArray(res.data) ? res.data : [])
             if (res.pagination) setPagination(res.pagination)
@@ -79,23 +79,23 @@ export default function MarketplaceConexionesPage() {
     const openEdit = (conn: MarketplaceConnection) => {
         setEditing(conn)
         setForm({
-            platform: conn.platform,
-            name: conn.name,
+            marketplace: conn.marketplace,
+            nombre: conn.nombre,
             shop_url: conn.shop_url || '',
-            active: conn.active,
+            activa: conn.activa,
         })
         setShowModal(true)
     }
 
     const handleSave = async () => {
-        if (!form.name.trim()) {
+        if (!form.nombre.trim()) {
             toast({ title: 'El nombre es obligatorio', variant: 'destructive' })
             return
         }
         setSaving(true)
         const res = editing
-            ? await api.put(`/marketplace-connections/${editing.id}`, form)
-            : await api.post('/marketplace-connections', form)
+            ? await api.put(`/marketplace/connections/${editing.id}`, form)
+            : await api.post('/marketplace/connections', form)
         if (res.status === 1) {
             toast({ title: editing ? 'Conexion actualizada' : 'Conexion creada', variant: 'success' })
             setShowModal(false)
@@ -108,7 +108,7 @@ export default function MarketplaceConexionesPage() {
 
     const handleDelete = async (id: number) => {
         if (!confirm('Eliminar esta conexion?')) return
-        const res = await api.del(`/marketplace-connections/${id}`)
+        const res = await api.del(`/marketplace/connections/${id}`)
         if (res.status === 1) {
             toast({ title: 'Conexion eliminada', variant: 'success' })
             fetchConnections(pagination.currentPage)
@@ -119,7 +119,7 @@ export default function MarketplaceConexionesPage() {
 
     const handleSync = async (id: number) => {
         setSyncingId(id)
-        const res = await api.post(`/marketplace-connections/${id}/sync`, {})
+        const res = await api.patch(`/marketplace/connections/${id}/sync`, {})
         if (res.status === 1) {
             toast({ title: 'Sincronizacion iniciada', variant: 'success' })
             fetchConnections(pagination.currentPage)
@@ -131,15 +131,16 @@ export default function MarketplaceConexionesPage() {
 
     const columns: Column<MarketplaceConnection>[] = [
         {
-            key: 'platform',
+            key: 'marketplace',
             label: 'Marketplace',
             render: (v) => {
                 const p = platformMap[v as MarketplacePlatform]
+                if (!p) return <span className="text-xs text-muted-foreground">{String(v ?? '-')}</span>
                 return <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${p.color}`}>{p.label}</span>
             },
         },
         {
-            key: 'name',
+            key: 'nombre',
             label: 'Nombre',
             render: (v) => <span className="font-medium">{v as string}</span>,
         },
@@ -153,12 +154,12 @@ export default function MarketplaceConexionesPage() {
             ) : <span className="text-muted-foreground text-sm">-</span>,
         },
         {
-            key: 'last_sync',
+            key: 'ultimo_sync_at',
             label: 'Ultimo sync',
             render: (v) => v ? <span className="text-sm">{formatDateTime(v as string)}</span> : <span className="text-muted-foreground text-sm">Nunca</span>,
         },
         {
-            key: 'active',
+            key: 'activa',
             label: 'Estado',
             render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activa' : 'Inactiva'}</Badge>,
         },
@@ -216,7 +217,7 @@ export default function MarketplaceConexionesPage() {
                     <div className="space-y-4">
                         <div>
                             <Label>Marketplace *</Label>
-                            <Select value={form.platform} onValueChange={(v) => setForm(f => ({ ...f, platform: v as MarketplacePlatform }))}>
+                            <Select value={form.marketplace} onValueChange={(v) => setForm(f => ({ ...f, marketplace: v as MarketplacePlatform }))}>
                                 <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                 <SelectContent>
                                     <SelectItem value="mercadolibre">MercadoLibre</SelectItem>
@@ -228,7 +229,7 @@ export default function MarketplaceConexionesPage() {
                         </div>
                         <div>
                             <Label>Nombre de la conexion *</Label>
-                            <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" autoFocus placeholder="Ej: Tienda principal ML" />
+                            <Input value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} className="mt-1" autoFocus placeholder="Ej: Tienda principal ML" />
                         </div>
                         <div>
                             <Label>Shop URL</Label>

@@ -19,43 +19,42 @@ type WithholdingType = 'retencion' | 'percepcion'
 
 type TaxSetting = {
     id: number
-    jurisdiction: string
-    type: WithholdingType
-    aliquot: number
-    min_taxable_base: number
-    active: boolean
-    description?: string
+    jurisdiccion: string
+    tipo: WithholdingType
+    impuesto: string
+    alicuota: number | string
+    monto_minimo: number | string
+    activa: boolean
 }
 
 type TaxWithholding = {
     id: number
-    date: string
-    reference_type: 'sale' | 'purchase'
-    reference_id: number
-    jurisdiction: string
-    type: WithholdingType
-    taxable_base: number
-    aliquot: number
-    amount: number
+    fecha: string
+    sale_id: number | null
+    purchase_order_id: number | null
+    tipo: WithholdingType
+    base_imponible: number | string
+    alicuota: number | string
+    monto: number | string
+    numero_certificado?: string | null
+    taxSetting?: { id: number; jurisdiccion: string; tipo: WithholdingType; impuesto: string; alicuota: number | string } | null
     createdAt: string
 }
 
 type TaxSettingForm = {
-    jurisdiction: string
-    type: WithholdingType
-    aliquot: string
-    min_taxable_base: string
-    description: string
-    active: boolean
+    jurisdiccion: string
+    tipo: WithholdingType
+    alicuota: string
+    monto_minimo: string
+    activa: boolean
 }
 
 const emptySettingForm: TaxSettingForm = {
-    jurisdiction: '',
-    type: 'retencion',
-    aliquot: '',
-    min_taxable_base: '0',
-    description: '',
-    active: true,
+    jurisdiccion: '',
+    tipo: 'retencion',
+    alicuota: '',
+    monto_minimo: '0',
+    activa: true,
 }
 
 export default function IIBBPage() {
@@ -71,13 +70,13 @@ export default function IIBBPage() {
     const [editingSetting, setEditingSetting] = useState<TaxSetting | null>(null)
     const [settingForm, setSettingForm] = useState<TaxSettingForm>(emptySettingForm)
     const [withForm, setWithForm] = useState({
-        date: new Date().toISOString().split('T')[0],
+        fecha: new Date().toISOString().split('T')[0],
         reference_type: 'sale' as 'sale' | 'purchase',
         reference_id: '',
-        jurisdiction: '',
-        type: 'retencion' as WithholdingType,
-        taxable_base: '',
-        aliquot: '',
+        tax_setting_id: '',
+        tipo: 'retencion' as WithholdingType,
+        base_imponible: '',
+        alicuota: '',
     })
     const [saving, setSaving] = useState(false)
 
@@ -91,7 +90,11 @@ export default function IIBBPage() {
     const fetchWithholdings = useCallback(async (page = 1) => {
         setLoading(true)
         const params: Record<string, string> = { page: String(page), limit: '20' }
-        if (period) params.period = period
+        if (period) {
+            const [y, m] = period.split('-').map(Number)
+            params.fecha_desde = `${period}-01`
+            params.fecha_hasta = new Date(y, m, 0).toISOString().split('T')[0]
+        }
         const res = await api.get<TaxWithholding[]>('/tax-withholdings', params)
         if (res.status === 1 && res.data) {
             setWithholdingList(Array.isArray(res.data) ? res.data : [])
@@ -108,27 +111,28 @@ export default function IIBBPage() {
     const openEditSetting = (s: TaxSetting) => {
         setEditingSetting(s)
         setSettingForm({
-            jurisdiction: s.jurisdiction,
-            type: s.type,
-            aliquot: String(s.aliquot),
-            min_taxable_base: String(s.min_taxable_base),
-            description: s.description || '',
-            active: s.active,
+            jurisdiccion: s.jurisdiccion,
+            tipo: s.tipo,
+            alicuota: String(s.alicuota),
+            monto_minimo: String(s.monto_minimo),
+            activa: s.activa,
         })
         setShowSettingModal(true)
     }
 
     const handleSaveSetting = async () => {
-        if (!settingForm.jurisdiction.trim() || !settingForm.aliquot) {
+        if (!settingForm.jurisdiccion.trim() || !settingForm.alicuota) {
             toast({ title: 'Jurisdiccion y alicuota son obligatorias', variant: 'destructive' })
             return
         }
         setSaving(true)
-        const body = {
-            ...settingForm,
-            aliquot: parseFloat(settingForm.aliquot),
-            min_taxable_base: parseFloat(settingForm.min_taxable_base) || 0,
-        }
+        const alicuota = parseFloat(settingForm.alicuota)
+        const monto_minimo = parseFloat(settingForm.monto_minimo) || 0
+        // create: jurisdiccion, tipo, impuesto, alicuota (+ monto_minimo)
+        // update: alicuota, monto_minimo, activa
+        const body = editingSetting
+            ? { alicuota, monto_minimo, activa: settingForm.activa }
+            : { jurisdiccion: settingForm.jurisdiccion, tipo: settingForm.tipo, impuesto: 'IIBB', alicuota, monto_minimo }
         const res = editingSetting
             ? await api.put(`/tax-settings/${editingSetting.id}`, body)
             : await api.post('/tax-settings', body)
@@ -152,19 +156,22 @@ export default function IIBBPage() {
     }
 
     const handleSaveWithholding = async () => {
-        if (!withForm.jurisdiction || !withForm.taxable_base || !withForm.aliquot) {
-            toast({ title: 'Jurisdiccion, base imponible y alicuota son obligatorias', variant: 'destructive' })
+        if (!withForm.tax_setting_id || !withForm.base_imponible || !withForm.alicuota) {
+            toast({ title: 'Alicuota IIBB, base imponible y alicuota son obligatorias', variant: 'destructive' })
             return
         }
         setSaving(true)
-        const taxable = parseFloat(withForm.taxable_base)
-        const aliquot = parseFloat(withForm.aliquot)
+        const base_imponible = parseFloat(withForm.base_imponible)
+        const alicuota = parseFloat(withForm.alicuota)
+        const refId = Number(withForm.reference_id) || null
         const res = await api.post('/tax-withholdings', {
-            ...withForm,
-            reference_id: Number(withForm.reference_id) || undefined,
-            taxable_base: taxable,
-            aliquot,
-            amount: taxable * (aliquot / 100),
+            tax_setting_id: Number(withForm.tax_setting_id),
+            tipo: withForm.tipo,
+            base_imponible,
+            alicuota,
+            fecha: withForm.fecha,
+            sale_id: withForm.reference_type === 'sale' ? refId : null,
+            purchase_order_id: withForm.reference_type === 'purchase' ? refId : null,
         })
         if (res.status === 1) {
             toast({ title: 'Retencion registrada', variant: 'success' })
@@ -177,39 +184,43 @@ export default function IIBBPage() {
     }
 
     const settingColumns: Column<TaxSetting>[] = [
-        { key: 'jurisdiction', label: 'Jurisdiccion', render: (v) => <span className="font-medium">{v as string}</span> },
+        { key: 'jurisdiccion', label: 'Jurisdiccion', render: (v) => <span className="font-medium">{v as string}</span> },
         {
-            key: 'type', label: 'Tipo',
+            key: 'tipo', label: 'Tipo',
             render: (v) => <Badge variant="outline">{v === 'retencion' ? 'Retencion' : 'Percepcion'}</Badge>,
         },
         {
-            key: 'aliquot', label: 'Alicuota',
-            render: (v) => <span className="font-mono font-semibold">{v as number}%</span>,
+            key: 'alicuota', label: 'Alicuota',
+            render: (v) => <span className="font-mono font-semibold">{Number(v)}%</span>,
         },
         {
-            key: 'min_taxable_base', label: 'Base minima',
-            render: (v) => <span className="text-sm">{formatCurrency(v as number)}</span>,
+            key: 'monto_minimo', label: 'Base minima',
+            render: (v) => <span className="text-sm">{formatCurrency(Number(v))}</span>,
         },
         {
-            key: 'active', label: 'Estado',
+            key: 'activa', label: 'Estado',
             render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activa' : 'Inactiva'}</Badge>,
         },
     ]
 
     const withColumns: Column<TaxWithholding>[] = [
-        { key: 'date', label: 'Fecha', sortable: true, render: (v) => <span className="text-sm">{(v as string)?.split('T')[0] || '-'}</span> },
+        { key: 'fecha', label: 'Fecha', sortable: true, render: (v) => <span className="text-sm">{(v as string)?.split('T')[0] || '-'}</span> },
         {
-            key: 'reference_type', label: 'Tipo ref.',
-            render: (v, row) => <span className="text-sm">{v === 'sale' ? 'Venta' : 'Compra'} #{row.reference_id}</span>,
+            key: 'sale_id', label: 'Tipo ref.',
+            render: (_v, row) => (
+                <span className="text-sm">
+                    {row.sale_id ? `Venta #${row.sale_id}` : row.purchase_order_id ? `Compra #${row.purchase_order_id}` : '-'}
+                </span>
+            ),
         },
-        { key: 'jurisdiction', label: 'Jurisdiccion', render: (v) => <span className="text-sm">{v as string}</span> },
+        { key: 'taxSetting', label: 'Jurisdiccion', render: (_v, row) => <span className="text-sm">{row.taxSetting?.jurisdiccion || '-'}</span> },
         {
-            key: 'type', label: 'Tipo',
+            key: 'tipo', label: 'Tipo',
             render: (v) => <Badge variant="outline">{v === 'retencion' ? 'Ret.' : 'Perc.'}</Badge>,
         },
-        { key: 'taxable_base', label: 'Base imponible', render: (v) => <span className="text-sm">{formatCurrency(v as number)}</span> },
-        { key: 'aliquot', label: 'Alicuota', render: (v) => <span className="font-mono text-sm">{v as number}%</span> },
-        { key: 'amount', label: 'Monto', render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span> },
+        { key: 'base_imponible', label: 'Base imponible', render: (v) => <span className="text-sm">{formatCurrency(Number(v))}</span> },
+        { key: 'alicuota', label: 'Alicuota', render: (v) => <span className="font-mono text-sm">{Number(v)}%</span> },
+        { key: 'monto', label: 'Monto', render: (v) => <span className="font-semibold">{formatCurrency(Number(v))}</span> },
     ]
 
     return (
@@ -227,6 +238,7 @@ export default function IIBBPage() {
                         setSettingForm(emptySettingForm)
                         setShowSettingModal(true)
                     } else {
+                        if (settings.length === 0) fetchSettings()
                         setShowWithholdingModal(true)
                     }
                 }}>
@@ -303,12 +315,12 @@ export default function IIBBPage() {
                     <div className="space-y-4">
                         <div>
                             <Label>Jurisdiccion *</Label>
-                            <Input value={settingForm.jurisdiction} onChange={(e) => setSettingForm(f => ({ ...f, jurisdiction: e.target.value }))} className="mt-1" placeholder="Ej: Salta, Buenos Aires, Nacional" autoFocus />
+                            <Input value={settingForm.jurisdiccion} onChange={(e) => setSettingForm(f => ({ ...f, jurisdiccion: e.target.value }))} className="mt-1" placeholder="Ej: Salta, Buenos Aires, Nacional" autoFocus disabled={!!editingSetting} />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Tipo</Label>
-                                <Select value={settingForm.type} onValueChange={(v) => setSettingForm(f => ({ ...f, type: v as WithholdingType }))}>
+                                <Select value={settingForm.tipo} onValueChange={(v) => setSettingForm(f => ({ ...f, tipo: v as WithholdingType }))} disabled={!!editingSetting}>
                                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="retencion">Retencion</SelectItem>
@@ -318,17 +330,25 @@ export default function IIBBPage() {
                             </div>
                             <div>
                                 <Label>Alicuota (%) *</Label>
-                                <Input type="number" min={0} max={100} step={0.01} value={settingForm.aliquot} onChange={(e) => setSettingForm(f => ({ ...f, aliquot: e.target.value }))} className="mt-1" />
+                                <Input type="number" min={0} max={100} step={0.01} value={settingForm.alicuota} onChange={(e) => setSettingForm(f => ({ ...f, alicuota: e.target.value }))} className="mt-1" />
                             </div>
                         </div>
                         <div>
                             <Label>Base minima</Label>
-                            <Input type="number" min={0} value={settingForm.min_taxable_base} onChange={(e) => setSettingForm(f => ({ ...f, min_taxable_base: e.target.value }))} className="mt-1" />
+                            <Input type="number" min={0} value={settingForm.monto_minimo} onChange={(e) => setSettingForm(f => ({ ...f, monto_minimo: e.target.value }))} className="mt-1" />
                         </div>
-                        <div>
-                            <Label>Descripcion</Label>
-                            <Input value={settingForm.description} onChange={(e) => setSettingForm(f => ({ ...f, description: e.target.value }))} className="mt-1" />
-                        </div>
+                        {editingSetting && (
+                            <div className="flex items-center justify-between">
+                                <Label>Activa</Label>
+                                <Select value={settingForm.activa ? 'true' : 'false'} onValueChange={(v) => setSettingForm(f => ({ ...f, activa: v === 'true' }))}>
+                                    <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
+                                    <SelectContent>
+                                        <SelectItem value="true">Activa</SelectItem>
+                                        <SelectItem value="false">Inactiva</SelectItem>
+                                    </SelectContent>
+                                </Select>
+                            </div>
+                        )}
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowSettingModal(false)}>Cancelar</Button>
@@ -348,7 +368,7 @@ export default function IIBBPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Fecha</Label>
-                                <Input type="date" value={withForm.date} onChange={(e) => setWithForm(f => ({ ...f, date: e.target.value }))} className="mt-1" />
+                                <Input type="date" value={withForm.fecha} onChange={(e) => setWithForm(f => ({ ...f, fecha: e.target.value }))} className="mt-1" />
                             </div>
                             <div>
                                 <Label>Tipo referencia</Label>
@@ -361,20 +381,38 @@ export default function IIBBPage() {
                                 </Select>
                             </div>
                         </div>
-                        <div className="grid grid-cols-2 gap-4">
-                            <div>
-                                <Label>ID Referencia</Label>
-                                <Input type="number" value={withForm.reference_id} onChange={(e) => setWithForm(f => ({ ...f, reference_id: e.target.value }))} className="mt-1" placeholder="ID de venta/compra" />
-                            </div>
-                            <div>
-                                <Label>Jurisdiccion *</Label>
-                                <Input value={withForm.jurisdiction} onChange={(e) => setWithForm(f => ({ ...f, jurisdiction: e.target.value }))} className="mt-1" />
-                            </div>
+                        <div>
+                            <Label>ID Referencia</Label>
+                            <Input type="number" value={withForm.reference_id} onChange={(e) => setWithForm(f => ({ ...f, reference_id: e.target.value }))} className="mt-1" placeholder="ID de venta/compra (opcional)" />
+                        </div>
+                        <div>
+                            <Label>Alicuota IIBB *</Label>
+                            <Select
+                                value={withForm.tax_setting_id}
+                                onValueChange={(v) => {
+                                    const s = settings.find(x => String(x.id) === v)
+                                    setWithForm(f => ({
+                                        ...f,
+                                        tax_setting_id: v,
+                                        tipo: s ? s.tipo : f.tipo,
+                                        alicuota: s ? String(s.alicuota) : f.alicuota,
+                                    }))
+                                }}
+                            >
+                                <SelectTrigger className="mt-1"><SelectValue placeholder="Seleccione una alicuota configurada" /></SelectTrigger>
+                                <SelectContent>
+                                    {settings.map(s => (
+                                        <SelectItem key={s.id} value={String(s.id)}>
+                                            {s.jurisdiccion} - {s.tipo === 'retencion' ? 'Ret.' : 'Perc.'} {Number(s.alicuota)}%
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Tipo</Label>
-                                <Select value={withForm.type} onValueChange={(v) => setWithForm(f => ({ ...f, type: v as WithholdingType }))}>
+                                <Select value={withForm.tipo} onValueChange={(v) => setWithForm(f => ({ ...f, tipo: v as WithholdingType }))}>
                                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="retencion">Retencion</SelectItem>
@@ -384,17 +422,17 @@ export default function IIBBPage() {
                             </div>
                             <div>
                                 <Label>Alicuota (%) *</Label>
-                                <Input type="number" min={0} max={100} step={0.01} value={withForm.aliquot} onChange={(e) => setWithForm(f => ({ ...f, aliquot: e.target.value }))} className="mt-1" />
+                                <Input type="number" min={0} max={100} step={0.01} value={withForm.alicuota} onChange={(e) => setWithForm(f => ({ ...f, alicuota: e.target.value }))} className="mt-1" />
                             </div>
                         </div>
                         <div>
                             <Label>Base imponible *</Label>
-                            <Input type="number" min={0} step={0.01} value={withForm.taxable_base} onChange={(e) => setWithForm(f => ({ ...f, taxable_base: e.target.value }))} className="mt-1" />
+                            <Input type="number" min={0} step={0.01} value={withForm.base_imponible} onChange={(e) => setWithForm(f => ({ ...f, base_imponible: e.target.value }))} className="mt-1" />
                         </div>
                         <Separator />
-                        {withForm.taxable_base && withForm.aliquot && (
+                        {withForm.base_imponible && withForm.alicuota && (
                             <p className="text-sm font-semibold text-right">
-                                Monto a retener: {formatCurrency(parseFloat(withForm.taxable_base) * parseFloat(withForm.aliquot) / 100)}
+                                Monto a retener: {formatCurrency(parseFloat(withForm.base_imponible) * parseFloat(withForm.alicuota) / 100)}
                             </p>
                         )}
                     </div>

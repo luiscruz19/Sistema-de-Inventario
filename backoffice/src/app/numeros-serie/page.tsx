@@ -15,19 +15,19 @@ import { formatDateTime } from '@/lib/utils'
 import { Plus, Hash, Upload } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-type SerialStatus = 'available' | 'sold' | 'returned' | 'decommissioned'
+type SerialStatus = 'disponible' | 'vendido' | 'devuelto' | 'dado_de_baja'
 
 type Serial = {
     id: number
-    serial_number: string
+    numero_serie: string
     product_id: number
     product?: { name: string }
     batch_id?: number
-    batch?: { batch_number: string }
-    status: SerialStatus
+    batch?: { numero_lote: string }
+    estado: SerialStatus
     customer_id?: number
     customer?: { name: string }
-    sold_at?: string
+    fecha_venta?: string
     createdAt: string
 }
 
@@ -40,10 +40,10 @@ type SerialForm = {
 const emptyForm: SerialForm = { serial_number: '', product_id: '', batch_id: '' }
 
 const statusMap: Record<SerialStatus, { label: string; variant: 'success' | 'secondary' | 'warning' | 'destructive' }> = {
-    available: { label: 'Disponible', variant: 'success' },
-    sold: { label: 'Vendido', variant: 'secondary' },
-    returned: { label: 'Devuelto', variant: 'warning' },
-    decommissioned: { label: 'Baja', variant: 'destructive' },
+    disponible: { label: 'Disponible', variant: 'success' },
+    vendido: { label: 'Vendido', variant: 'secondary' },
+    devuelto: { label: 'Devuelto', variant: 'warning' },
+    dado_de_baja: { label: 'Baja', variant: 'destructive' },
 }
 
 export default function NumerosSeriesPage() {
@@ -65,7 +65,7 @@ export default function NumerosSeriesPage() {
         setLoading(true)
         const params: Record<string, string> = { page: String(page), limit: '20' }
         if (productFilter) params.product_id = productFilter
-        if (statusFilter) params.status = statusFilter
+        if (statusFilter) params.estado = statusFilter
         const res = await api.get<Serial[]>('/serials', params)
         if (res.status === 1 && res.data) {
             setSerials(Array.isArray(res.data) ? res.data : [])
@@ -83,7 +83,7 @@ export default function NumerosSeriesPage() {
         }
         setSaving(true)
         const res = await api.post('/serials', {
-            serial_number: form.serial_number,
+            numero_serie: form.serial_number,
             product_id: Number(form.product_id),
             batch_id: form.batch_id ? Number(form.batch_id) : undefined,
         })
@@ -112,7 +112,7 @@ export default function NumerosSeriesPage() {
         const res = await api.post('/serials/bulk', {
             product_id: Number(bulkProductId),
             batch_id: bulkBatchId ? Number(bulkBatchId) : undefined,
-            serials: serialList,
+            numeros_serie: serialList,
         })
         if (res.status === 1) {
             toast({ title: `${serialList.length} series cargadas`, variant: 'success' })
@@ -129,7 +129,7 @@ export default function NumerosSeriesPage() {
 
     const columns: Column<Serial>[] = [
         {
-            key: 'serial_number',
+            key: 'numero_serie',
             label: 'N° Serie',
             render: (v) => <span className="font-mono font-semibold text-sm">{v as string}</span>,
         },
@@ -141,10 +141,10 @@ export default function NumerosSeriesPage() {
         {
             key: 'batch',
             label: 'Lote',
-            render: (_, row) => <span className="text-sm text-muted-foreground">{row.batch?.batch_number || '-'}</span>,
+            render: (_, row) => <span className="text-sm text-muted-foreground">{row.batch?.numero_lote || '-'}</span>,
         },
         {
-            key: 'status',
+            key: 'estado',
             label: 'Estado',
             render: (v) => {
                 const s = statusMap[v as SerialStatus]
@@ -157,7 +157,7 @@ export default function NumerosSeriesPage() {
             render: (_, row) => <span className="text-sm">{row.customer?.name || '-'}</span>,
         },
         {
-            key: 'sold_at',
+            key: 'fecha_venta',
             label: 'Fecha venta',
             render: (v) => v ? <span className="text-sm">{formatDateTime(v as string)}</span> : <span className="text-muted-foreground text-sm">-</span>,
         },
@@ -189,16 +189,16 @@ export default function NumerosSeriesPage() {
                     onChange={(e) => setProductFilter(e.target.value)}
                     className="w-[220px]"
                 />
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                <Select value={statusFilter || '__all__'} onValueChange={(v) => setStatusFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[180px]">
                         <SelectValue placeholder="Todos los estados" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todos los estados</SelectItem>
-                        <SelectItem value="available">Disponible</SelectItem>
-                        <SelectItem value="sold">Vendido</SelectItem>
-                        <SelectItem value="returned">Devuelto</SelectItem>
-                        <SelectItem value="decommissioned">Baja</SelectItem>
+                        <SelectItem value="__all__">Todos los estados</SelectItem>
+                        <SelectItem value="disponible">Disponible</SelectItem>
+                        <SelectItem value="vendido">Vendido</SelectItem>
+                        <SelectItem value="devuelto">Devuelto</SelectItem>
+                        <SelectItem value="dado_de_baja">Baja</SelectItem>
                     </SelectContent>
                 </Select>
             </div>

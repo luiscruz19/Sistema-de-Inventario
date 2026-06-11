@@ -11,9 +11,10 @@ import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { ProductPicker } from '@/components/common/ProductPicker'
 import { formatDateTime } from '@/lib/utils'
 import { Plus, Eye, Trash2, Check, ArrowRight } from 'lucide-react'
-import type { StockTransfer, StockTransferItem, Branch, Product, Pagination } from '@/types'
+import type { StockTransfer, StockTransferItem, Branch, Pagination } from '@/types'
 
 const statusMap: Record<string, { label: string; variant: 'warning' | 'default' | 'success' | 'destructive' }> = {
     pending: { label: 'Pendiente', variant: 'warning' },
@@ -28,7 +29,6 @@ export default function TransferenciasPage() {
     const api = useApi()
     const [transfers, setTransfers] = useState<StockTransfer[]>([])
     const [branches, setBranches] = useState<Branch[]>([])
-    const [products, setProducts] = useState<Product[]>([])
     const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
     const [loading, setLoading] = useState(true)
     const [statusFilter, setStatusFilter] = useState('')
@@ -40,12 +40,8 @@ export default function TransferenciasPage() {
     const [receiveItems, setReceiveItems] = useState<{ id: number; quantity_received: string }[]>([])
 
     useEffect(() => {
-        Promise.all([
-            api.get<Branch[]>('/branches'),
-            api.get<Product[]>('/products', { limit: '500', active: 'true' }),
-        ]).then(([br, pr]) => {
+        api.get<Branch[]>('/branches').then((br) => {
             if (br.status === 1 && br.data) setBranches(Array.isArray(br.data) ? br.data : [])
-            if (pr.status === 1 && pr.data) setProducts(Array.isArray(pr.data) ? pr.data : [])
         })
     }, [api])
 
@@ -68,10 +64,13 @@ export default function TransferenciasPage() {
         if (res.status === 1 && res.data) { setSelectedTransfer(res.data); setShowDetailModal(true) }
     }
 
-    const openReceive = (transfer: StockTransfer) => {
-        setSelectedTransfer(transfer)
-        setReceiveItems((transfer.items || []).map(i => ({ id: i.id, quantity_received: String(i.quantity_sent) })))
-        setShowReceiveModal(true)
+    const openReceive = async (transfer: StockTransfer) => {
+        const res = await api.get<StockTransfer>(`/transfers/${transfer.id}`)
+        if (res.status === 1 && res.data) {
+            setSelectedTransfer(res.data)
+            setReceiveItems((res.data.items || []).map(i => ({ id: i.id, quantity_received: String(i.quantity_sent) })))
+            setShowReceiveModal(true)
+        }
     }
 
     const handleCreate = async () => {
@@ -85,7 +84,7 @@ export default function TransferenciasPage() {
             items: createForm.items.map(i => ({
                 product_id: Number(i.product_id),
                 variant_id: i.variant_id ? Number(i.variant_id) : null,
-                quantity_sent: Number(i.quantity_sent),
+                quantity: Number(i.quantity_sent),
             })),
         })
         if (res.status === 1) {
@@ -207,11 +206,8 @@ export default function TransferenciasPage() {
                                     {createForm.items.map((item, idx) => (
                                         <div key={idx} className="flex items-end gap-2 p-3 bg-muted rounded-lg">
                                             <div className="flex-1">
-                                                <Label className="text-xs">Producto</Label>
-                                                <Select value={item.product_id} onValueChange={(v) => setCreateForm(f => ({ ...f, items: f.items.map((it, i) => i === idx ? { ...it, product_id: v } : it) }))}>
-                                                    <SelectTrigger className="mt-1 h-8"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                                                    <SelectContent>{products.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}</SelectContent>
-                                                </Select>
+                                                <Label className="mb-1 block text-xs">Producto</Label>
+                                                <ProductPicker onChange={(p) => setCreateForm(f => ({ ...f, items: f.items.map((it, i) => i === idx ? { ...it, product_id: p ? String(p.id) : '' } : it) }))} />
                                             </div>
                                             <div className="w-24">
                                                 <Label className="text-xs">Cantidad</Label>

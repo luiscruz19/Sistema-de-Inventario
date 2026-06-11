@@ -45,7 +45,7 @@ interface DataTableProps<T> {
     onRowClick?: (row: T) => void
 }
 
-export function DataTable<T extends Record<string, unknown>>({
+export function DataTable<T>({
     data,
     columns,
     pagination,
@@ -85,8 +85,8 @@ export function DataTable<T extends Record<string, unknown>>({
     const sortedData = React.useMemo(() => {
         if (onSortChange || !localSort) return data
         return [...data].sort((a, b) => {
-            const aVal = getNestedValue(a, localSort.field)
-            const bVal = getNestedValue(b, localSort.field)
+            const aVal = getNestedValue(a as Record<string, unknown>, localSort.field)
+            const bVal = getNestedValue(b as Record<string, unknown>, localSort.field)
             if (aVal == null && bVal == null) return 0
             if (aVal == null) return 1
             if (bVal == null) return -1
@@ -107,7 +107,7 @@ export function DataTable<T extends Record<string, unknown>>({
     }
 
     const getCellValue = (row: T, col: Column<T>) => {
-        const value = getNestedValue(row, col.key)
+        const value = getNestedValue(row as Record<string, unknown>, col.key)
         if (col.render) return col.render(value, row)
         if (value == null) return <span className="text-muted-foreground">-</span>
         return String(value)

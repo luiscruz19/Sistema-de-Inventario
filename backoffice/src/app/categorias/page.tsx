@@ -11,6 +11,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
+import { PageHead } from '@/components/common/PageHead'
+import { useScreenActions } from '@/components/command/screen-actions'
 import { Plus, Pencil, Trash2, ChevronRight, FolderOpen, Folder, FolderTree } from 'lucide-react'
 import type { Category } from '@/types'
 
@@ -89,15 +91,15 @@ export default function CategoriasPage() {
 
     const topLevelCategories = categories.filter(c => !c.parent_id || c.parent_id === editing?.id)
 
+    useScreenActions({
+        primary: { label: 'Nueva categoría', icon: Plus, run: () => openCreate() },
+    }, [])
+
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Categorias</h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">Organiza tu catalogo en categorias y subcategorias</p>
-                </div>
-                <Button onClick={() => openCreate()}><Plus className="h-4 w-4 mr-2" /> Nueva categoria</Button>
-            </div>
+            <PageHead title="Categorías" sub={`${categories.length} ${categories.length === 1 ? 'categoría' : 'categorías'}`}>
+                <Button onClick={() => openCreate()}><Plus className="mr-2 h-[15px] w-[15px]" /> Nueva categoría</Button>
+            </PageHead>
 
             <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
                 <div className="flex items-center gap-3 py-2.5 px-4 bg-muted/50 border-b border-border text-xs font-medium uppercase tracking-wide text-muted-foreground">

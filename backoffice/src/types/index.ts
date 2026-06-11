@@ -247,6 +247,7 @@ export interface PriceList {
     name: string;
     type: PriceListType;
     active: boolean;
+    itemCount?: number;
     items?: PriceListItem[];
 }
 

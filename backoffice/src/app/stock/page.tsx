@@ -5,13 +5,17 @@ import { useApi } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
 import { DataTable, type Column } from '@/components/common/DataTable'
 import { StockBadge } from '@/components/common/StockBadge'
+import { ProductPicker } from '@/components/common/ProductPicker'
+import { PageHead } from '@/components/common/PageHead'
+import { StatCard } from '@/components/ui/stat-card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useScreenActions } from '@/components/command/screen-actions'
 import { formatCurrency } from '@/lib/utils'
 import { SlidersHorizontal } from 'lucide-react'
 import type { Stock, Branch, Product, Pagination } from '@/types'
@@ -21,21 +25,48 @@ export default function StockPage() {
     const [stockEntries, setStockEntries] = useState<Stock[]>([])
     const [branches, setBranches] = useState<Branch[]>([])
     const [products, setProducts] = useState<Product[]>([])
+    // Disponible total por product_id, agregado desde el snapshot completo de /stock.
+    // /products NO incluye stockEntries (solo getById lo hace), por eso los KPIs
+    // se derivan de /stock que ya trae quantity/reserved_quantity por sucursal.
+    const [availableByProduct, setAvailableByProduct] = useState<Record<number, number>>({})
     const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
     const [loading, setLoading] = useState(true)
     const [branchFilter, setBranchFilter] = useState('')
     const [search, setSearch] = useState('')
     const [showAdjustModal, setShowAdjustModal] = useState(false)
     const [adjustForm, setAdjustForm] = useState({ product_id: '', variant_id: '', branch_id: '', quantity: '', notes: '' })
+    const [adjustProduct, setAdjustProduct] = useState<Product | null>(null)
 
     useEffect(() => {
         Promise.all([
             api.get<Branch[]>('/branches'),
             api.get<Product[]>('/products', { limit: '500', active: 'true' }),
-        ]).then(([branchRes, prodRes]) => {
+            api.get<Stock[]>('/stock', { limit: '1000' }),
+        ]).then(([branchRes, prodRes, stockRes]) => {
             if (branchRes.status === 1 && branchRes.data) setBranches(Array.isArray(branchRes.data) ? branchRes.data : [])
             if (prodRes.status === 1 && prodRes.data) setProducts(Array.isArray(prodRes.data) ? prodRes.data : [])
+            if (stockRes.status === 1 && Array.isArray(stockRes.data)) {
+                const map: Record<number, number> = {}
+                for (const e of stockRes.data) {
+                    const avail = (Number(e.quantity) || 0) - (Number(e.reserved_quantity) || 0)
+                    map[e.product_id] = (map[e.product_id] ?? 0) + avail
+                }
+                setAvailableByProduct(map)
+            }
         })
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [api])
+
+    const refreshKpis = useCallback(async () => {
+        const res = await api.get<Stock[]>('/stock', { limit: '1000' })
+        if (res.status === 1 && Array.isArray(res.data)) {
+            const map: Record<number, number> = {}
+            for (const e of res.data) {
+                const avail = (Number(e.quantity) || 0) - (Number(e.reserved_quantity) || 0)
+                map[e.product_id] = (map[e.product_id] ?? 0) + avail
+            }
+            setAvailableByProduct(map)
+        }
     }, [api])
 
     const fetchStock = useCallback(async (page = 1) => {
@@ -57,18 +88,27 @@ export default function StockPage() {
         if (!adjustForm.product_id || !adjustForm.branch_id || !adjustForm.quantity) {
             toast({ title: 'Completa todos los campos', variant: 'destructive' }); return
         }
+        if (!adjustForm.notes.trim()) {
+            toast({ title: 'Indicá el motivo del ajuste', variant: 'destructive' }); return
+        }
+        // El modal usa semántica de variación (+ suma / - resta), por eso mode 'delta'.
+        // El backend (stock.controller.adjust) por defecto usa mode 'set' (valor absoluto)
+        // y rechaza negativos; además exige un motivo (motivo || notes).
         const res = await api.post('/stock/adjust', {
             product_id: Number(adjustForm.product_id),
             variant_id: adjustForm.variant_id ? Number(adjustForm.variant_id) : null,
             branch_id: Number(adjustForm.branch_id),
             quantity: Number(adjustForm.quantity),
+            mode: 'delta',
             notes: adjustForm.notes,
         })
         if (res.status === 1) {
             toast({ title: 'Stock ajustado', variant: 'success' })
             setShowAdjustModal(false)
             setAdjustForm({ product_id: '', variant_id: '', branch_id: '', quantity: '', notes: '' })
+            setAdjustProduct(null)
             fetchStock(pagination.currentPage)
+            refreshKpis()
         } else {
             toast({ title: 'Error', description: res.message, variant: 'destructive' })
         }
@@ -83,29 +123,39 @@ export default function StockPage() {
         )},
         { key: 'variant', label: 'Variante', render: (_, row) => row.variant?.name || '-' },
         { key: 'branch', label: 'Sucursal', render: (_, row) => row.branch?.name || '-' },
-        { key: 'quantity', label: 'Stock', sortable: true, render: (v) => <span className="font-semibold">{v as number}</span> },
-        { key: 'reserved_quantity', label: 'Reservado', render: (v) => v as number || 0 },
+        { key: 'quantity', label: 'Stock', sortable: true, render: (v) => <span className="font-semibold">{Number(v)}</span> },
+        { key: 'reserved_quantity', label: 'Reservado', render: (v) => Number(v) || 0 },
         { key: 'available', label: 'Disponible', render: (_, row) => {
-            const avail = row.quantity - row.reserved_quantity
+            const avail = Number(row.quantity) - Number(row.reserved_quantity)
             return <span className={avail <= 0 ? 'text-destructive font-semibold' : 'font-semibold'}>{avail}</span>
         }},
         { key: 'alert', label: 'Alerta', render: (_, row) => (
-            <StockBadge quantity={row.quantity} minAlert={row.product?.min_stock_alert ?? 0} reserved={row.reserved_quantity} />
+            <StockBadge quantity={Number(row.quantity)} minAlert={Number(row.product?.min_stock_alert ?? 0)} reserved={Number(row.reserved_quantity)} />
         )},
     ]
 
-    const selectedProduct = products.find(p => String(p.id) === adjustForm.product_id)
+    useScreenActions({
+        primary: { label: 'Ajustar stock', icon: SlidersHorizontal, run: () => setShowAdjustModal(true) },
+    }, [])
+
+    const stockOf = (p: Product): number => availableByProduct[p.id] ?? 0
+    const tracked = products.filter(p => p.track_stock)
+    const sinStock = tracked.filter(p => stockOf(p) <= 0).length
+    const porReponer = tracked.filter(p => { const s = stockOf(p); return s > 0 && s <= Number(p.min_stock_alert) }).length
+    const valorizado = tracked.reduce((acc, p) => acc + stockOf(p) * Number(p.cost_price), 0)
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Stock por sucursal</h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">Existencias actuales y ajustes de inventario</p>
-                </div>
-                <Button onClick={() => setShowAdjustModal(true)}>
-                    <SlidersHorizontal className="h-4 w-4 mr-2" /> Ajustar stock
+            <PageHead title="Stock" sub="Control de inventario · Sucursal Centro">
+                <Button variant="outline" onClick={() => setShowAdjustModal(true)}>
+                    <SlidersHorizontal className="mr-2 h-[15px] w-[15px]" /> Ajustar stock
                 </Button>
+            </PageHead>
+
+            <div className="mb-5 grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                <StatCard label="Sin stock" value={sinStock} delta="agotados" deltaDirection={sinStock > 0 ? 'down' : 'muted'} />
+                <StatCard label="Por reponer" value={porReponer} delta="≤ mínimo" deltaDirection={porReponer > 0 ? 'down' : 'muted'} />
+                <StatCard label="Stock valorizado" value={formatCurrency(valorizado)} delta="a costo" />
             </div>
 
             {branches.length > 1 && (
@@ -138,22 +188,20 @@ export default function StockPage() {
                     </DialogHeader>
                     <div className="space-y-4">
                         <div>
-                            <Label>Producto *</Label>
-                            <Select value={adjustForm.product_id} onValueChange={(v) => setAdjustForm(f => ({ ...f, product_id: v, variant_id: '' }))}>
-                                <SelectTrigger className="mt-1"><SelectValue placeholder="Seleccionar producto" /></SelectTrigger>
-                                <SelectContent>
-                                    {products.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name}</SelectItem>)}
-                                </SelectContent>
-                            </Select>
+                            <Label className="mb-1 block">Producto *</Label>
+                            <ProductPicker
+                                selected={adjustProduct}
+                                onChange={(p) => { setAdjustProduct(p); setAdjustForm(f => ({ ...f, product_id: p ? String(p.id) : '', variant_id: '' })) }}
+                            />
                         </div>
-                        {selectedProduct?.variants && selectedProduct.variants.length > 0 && (
+                        {adjustProduct?.variants && adjustProduct.variants.length > 0 && (
                             <div>
                                 <Label>Variante</Label>
-                                <Select value={adjustForm.variant_id} onValueChange={(v) => setAdjustForm(f => ({ ...f, variant_id: v === '__none__' ? '' : v }))}>
+                                <Select value={adjustForm.variant_id || '__none__'} onValueChange={(v) => setAdjustForm(f => ({ ...f, variant_id: v === '__none__' ? '' : v }))}>
                                     <SelectTrigger className="mt-1"><SelectValue placeholder="Sin variante" /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="__none__">Sin variante</SelectItem>
-                                        {selectedProduct.variants.map(v => <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>)}
+                                        {adjustProduct.variants.map(v => <SelectItem key={v.id} value={String(v.id)}>{v.name}</SelectItem>)}
                                     </SelectContent>
                                 </Select>
                             </div>
@@ -168,7 +216,7 @@ export default function StockPage() {
                             </Select>
                         </div>
                         <div><Label>Cantidad (+ o -) *</Label><Input type="number" value={adjustForm.quantity} onChange={(e) => setAdjustForm(f => ({ ...f, quantity: e.target.value }))} className="mt-1" placeholder="ej: 10 o -5" /></div>
-                        <div><Label>Motivo</Label><Textarea value={adjustForm.notes} onChange={(e) => setAdjustForm(f => ({ ...f, notes: e.target.value }))} className="mt-1" rows={2} placeholder="Motivo del ajuste..." /></div>
+                        <div><Label>Motivo *</Label><Textarea value={adjustForm.notes} onChange={(e) => setAdjustForm(f => ({ ...f, notes: e.target.value }))} className="mt-1" rows={2} placeholder="Motivo del ajuste..." /></div>
                     </div>
                     <DialogFooter>
                         <Button variant="outline" onClick={() => setShowAdjustModal(false)}>Cancelar</Button>

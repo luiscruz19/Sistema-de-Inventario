@@ -18,44 +18,46 @@ type BatchStatus = 'ok' | 'expiring_soon' | 'expired'
 
 type Batch = {
     id: number
-    batch_number: string
+    numero_lote: string
     product_id: number
-    product?: { name: string }
+    product?: { id: number; name: string; sku?: string }
     variant_id?: number
-    initial_quantity: number
-    current_quantity: number
-    expiration_date?: string
-    manufacture_date?: string
-    supplier?: string
-    notes?: string
+    variant?: { id: number; name: string }
+    cantidad_inicial: number
+    cantidad_actual: number
+    fecha_vencimiento?: string
+    fecha_fabricacion?: string
+    proveedor_id?: number
+    proveedor?: { id: number; name: string }
+    observaciones?: string
     createdAt: string
 }
 
 type BatchForm = {
-    batch_number: string
+    numero_lote: string
     product_id: string
     variant_id: string
-    initial_quantity: string
-    expiration_date: string
-    manufacture_date: string
-    supplier: string
-    notes: string
+    cantidad_inicial: string
+    fecha_vencimiento: string
+    fecha_fabricacion: string
+    proveedor_id: string
+    observaciones: string
 }
 
 const emptyForm: BatchForm = {
-    batch_number: '',
+    numero_lote: '',
     product_id: '',
     variant_id: '',
-    initial_quantity: '',
-    expiration_date: '',
-    manufacture_date: '',
-    supplier: '',
-    notes: '',
+    cantidad_inicial: '',
+    fecha_vencimiento: '',
+    fecha_fabricacion: '',
+    proveedor_id: '',
+    observaciones: '',
 }
 
 function getBatchStatus(batch: Batch): BatchStatus {
-    if (!batch.expiration_date) return 'ok'
-    const exp = new Date(batch.expiration_date)
+    if (!batch.fecha_vencimiento) return 'ok'
+    const exp = new Date(batch.fecha_vencimiento)
     const now = new Date()
     const diffDays = (exp.getTime() - now.getTime()) / (1000 * 60 * 60 * 24)
     if (diffDays < 0) return 'expired'
@@ -94,18 +96,20 @@ export default function LotesPage() {
     useEffect(() => { fetchBatches() }, [fetchBatches])
 
     const handleSave = async () => {
-        if (!form.batch_number.trim() || !form.product_id || !form.initial_quantity) {
+        if (!form.numero_lote.trim() || !form.product_id || !form.cantidad_inicial) {
             toast({ title: 'N° de lote, producto y cantidad son obligatorios', variant: 'destructive' })
             return
         }
         setSaving(true)
         const res = await api.post('/batches', {
-            ...form,
             product_id: Number(form.product_id),
             variant_id: form.variant_id ? Number(form.variant_id) : undefined,
-            initial_quantity: Number(form.initial_quantity),
-            expiration_date: form.expiration_date || undefined,
-            manufacture_date: form.manufacture_date || undefined,
+            numero_lote: form.numero_lote,
+            cantidad_inicial: Number(form.cantidad_inicial),
+            fecha_vencimiento: form.fecha_vencimiento || undefined,
+            fecha_fabricacion: form.fecha_fabricacion || undefined,
+            proveedor_id: form.proveedor_id ? Number(form.proveedor_id) : undefined,
+            observaciones: form.observaciones || undefined,
         })
         if (res.status === 1) {
             toast({ title: 'Lote creado', variant: 'success' })
@@ -120,7 +124,7 @@ export default function LotesPage() {
 
     const columns: Column<Batch>[] = [
         {
-            key: 'batch_number',
+            key: 'numero_lote',
             label: 'N° Lote',
             render: (v) => <span className="font-mono font-semibold text-sm">{v as string}</span>,
         },
@@ -130,17 +134,17 @@ export default function LotesPage() {
             render: (_, row) => <span className="font-medium">{row.product?.name || `#${row.product_id}`}</span>,
         },
         {
-            key: 'current_quantity',
+            key: 'cantidad_actual',
             label: 'Cant. actual / inicial',
             render: (_, row) => (
                 <span className="text-sm">
-                    <span className="font-semibold">{row.current_quantity}</span>
-                    <span className="text-muted-foreground"> / {row.initial_quantity}</span>
+                    <span className="font-semibold">{row.cantidad_actual}</span>
+                    <span className="text-muted-foreground"> / {row.cantidad_inicial}</span>
                 </span>
             ),
         },
         {
-            key: 'expiration_date',
+            key: 'fecha_vencimiento',
             label: 'Vencimiento',
             render: (v, row) => {
                 if (!v) return <span className="text-muted-foreground text-sm">-</span>
@@ -155,9 +159,9 @@ export default function LotesPage() {
             },
         },
         {
-            key: 'supplier',
+            key: 'proveedor',
             label: 'Proveedor',
-            render: (v) => <span className="text-sm text-muted-foreground">{(v as string) || '-'}</span>,
+            render: (_, row) => <span className="text-sm text-muted-foreground">{row.proveedor?.name || '-'}</span>,
         },
     ]
 
@@ -202,7 +206,7 @@ export default function LotesPage() {
                     <div className="grid grid-cols-2 gap-4">
                         <div className="col-span-2">
                             <Label>N° de lote *</Label>
-                            <Input value={form.batch_number} onChange={(e) => setForm(f => ({ ...f, batch_number: e.target.value }))} className="mt-1" autoFocus placeholder="Ej: LOT-2026-001" />
+                            <Input value={form.numero_lote} onChange={(e) => setForm(f => ({ ...f, numero_lote: e.target.value }))} className="mt-1" autoFocus placeholder="Ej: LOT-2026-001" />
                         </div>
                         <div>
                             <Label>ID Producto *</Label>
@@ -214,23 +218,23 @@ export default function LotesPage() {
                         </div>
                         <div>
                             <Label>Cantidad inicial *</Label>
-                            <Input type="number" min={1} value={form.initial_quantity} onChange={(e) => setForm(f => ({ ...f, initial_quantity: e.target.value }))} className="mt-1" />
+                            <Input type="number" min={1} value={form.cantidad_inicial} onChange={(e) => setForm(f => ({ ...f, cantidad_inicial: e.target.value }))} className="mt-1" />
                         </div>
                         <div>
-                            <Label>Proveedor</Label>
-                            <Input value={form.supplier} onChange={(e) => setForm(f => ({ ...f, supplier: e.target.value }))} className="mt-1" />
+                            <Label>ID Proveedor</Label>
+                            <Input type="number" value={form.proveedor_id} onChange={(e) => setForm(f => ({ ...f, proveedor_id: e.target.value }))} className="mt-1" placeholder="ID del proveedor (opcional)" />
                         </div>
                         <div>
                             <Label>Fecha de fabricacion</Label>
-                            <Input type="date" value={form.manufacture_date} onChange={(e) => setForm(f => ({ ...f, manufacture_date: e.target.value }))} className="mt-1" />
+                            <Input type="date" value={form.fecha_fabricacion} onChange={(e) => setForm(f => ({ ...f, fecha_fabricacion: e.target.value }))} className="mt-1" />
                         </div>
                         <div>
                             <Label>Fecha de vencimiento</Label>
-                            <Input type="date" value={form.expiration_date} onChange={(e) => setForm(f => ({ ...f, expiration_date: e.target.value }))} className="mt-1" />
+                            <Input type="date" value={form.fecha_vencimiento} onChange={(e) => setForm(f => ({ ...f, fecha_vencimiento: e.target.value }))} className="mt-1" />
                         </div>
                         <div className="col-span-2">
                             <Label>Observaciones</Label>
-                            <Textarea value={form.notes} onChange={(e) => setForm(f => ({ ...f, notes: e.target.value }))} className="mt-1" rows={2} />
+                            <Textarea value={form.observaciones} onChange={(e) => setForm(f => ({ ...f, observaciones: e.target.value }))} className="mt-1" rows={2} />
                         </div>
                     </div>
                     <DialogFooter>

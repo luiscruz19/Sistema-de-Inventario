@@ -16,7 +16,7 @@ import { getRequestHeaders } from '@/utils/request-headers'
 import { Plus, Eye, CheckCircle, XCircle, RotateCcw } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-const API_BASE = '/inventario/api'
+const API_BASE = '/api'
 
 async function patchRequest(path: string) {
     const headers = getRequestHeaders()
@@ -81,10 +81,13 @@ export default function DevolucionesPage() {
 
     const fetchNotes = useCallback(async (page = 1) => {
         setLoading(true)
-        const res = await api.get<{ data: CreditNote[]; pagination: Pagination }>('/credit-notes', { page: String(page) })
+        const res = await api.get<CreditNote[]>('/credit-notes', { page: String(page) })
         if (res.status > 0 && res.data) {
-            setNotes(res.data.data || [])
-            if (res.data.pagination) setPagination(res.data.pagination)
+            setNotes(Array.isArray(res.data) ? res.data : [])
+            if (res.pagination) {
+                const p = res.pagination as Pagination & { itemsPerPage?: number }
+                setPagination(prev => ({ ...p, perPage: p.perPage ?? p.itemsPerPage ?? prev.perPage }))
+            }
         } else {
             toast({ title: 'Error', description: 'No se pudieron cargar las notas de crédito', variant: 'destructive' })
         }
@@ -120,7 +123,7 @@ export default function DevolucionesPage() {
             items,
         })
         if (res.status > 0) {
-            toast({ title: 'Nota de crédito creada', description: `${(res.data as CreditNote).number}` })
+            toast({ title: 'Nota de crédito creada', description: (res.data as CreditNote)?.number ?? '' })
             setShowCreate(false)
             setForm({ reason: '', sale_id: '', refund_method: 'none', notes: '' })
             setItems([{ ...emptyItem }])
@@ -147,16 +150,12 @@ export default function DevolucionesPage() {
     const openDetail = (note: CreditNote) => { setSelected(note); setShowDetail(true) }
 
     const columns: Column<CreditNote>[] = [
-        { key: 'number', header: 'Número', render: (v) => <span className="font-mono font-semibold">{String(v)}</span> },
-        { key: 'reason', header: 'Motivo', render: (v) => <span className="truncate max-w-[200px] block text-sm">{String(v)}</span> },
-        { key: 'status', header: 'Estado', render: (_, row) => <Badge variant={statusMap[row.status]?.variant}>{statusMap[row.status]?.label}</Badge> },
-        { key: 'refund_method', header: 'Forma', render: (v) => refundMethodMap[String(v)] || String(v) },
-        { key: 'total', header: 'Total', render: (v) => <span className="font-semibold">{formatCurrency(Number(v))}</span> },
-        { key: 'createdAt', header: 'Fecha', render: (v) => formatDateTime(String(v)) },
-    ]
-
-    const actions = [
-        { icon: Eye, label: 'Ver', onClick: openDetail },
+        { key: 'number', label: 'Número', render: (v) => <span className="font-mono font-semibold">{String(v)}</span> },
+        { key: 'reason', label: 'Motivo', render: (v) => <span className="truncate max-w-[200px] block text-sm">{String(v)}</span> },
+        { key: 'status', label: 'Estado', render: (_, row) => <Badge variant={statusMap[row.status]?.variant}>{statusMap[row.status]?.label}</Badge> },
+        { key: 'refund_method', label: 'Forma', render: (v) => refundMethodMap[String(v)] || String(v) },
+        { key: 'total', label: 'Total', render: (v) => <span className="font-semibold">{formatCurrency(Number(v))}</span> },
+        { key: 'createdAt', label: 'Fecha', render: (v) => formatDateTime(String(v)) },
     ]
 
     return (
@@ -169,7 +168,9 @@ export default function DevolucionesPage() {
                 <Button onClick={() => setShowCreate(true)}><Plus className="h-4 w-4 mr-1" /> Nueva devolución</Button>
             </div>
 
-            <DataTable data={notes} columns={columns} actions={actions} isLoading={loading} emptyMessage="No hay notas de crédito" pagination={pagination} onPageChange={fetchNotes} />
+            <DataTable data={notes} columns={columns} actions={(row) => (
+                <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openDetail(row)}><Eye className="h-4 w-4" /></Button>
+            )} isLoading={loading} emptyMessage="No hay notas de crédito" pagination={pagination} onPageChange={fetchNotes} />
 
             {/* Modal crear nota de crédito */}
             <Dialog open={showCreate} onOpenChange={setShowCreate}>

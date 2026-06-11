@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/common/EmptyState'
+import { PageHead } from '@/components/common/PageHead'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Plus, Pencil, Trash2, Building2, MapPin, Phone, Star } from 'lucide-react'
 import type { Branch } from '@/types'
@@ -62,13 +63,9 @@ export default function SucursalesPage() {
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Sucursales</h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">Puntos de venta y depositos del negocio</p>
-                </div>
-                <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nueva sucursal</Button>
-            </div>
+            <PageHead title="Sucursales" sub="Puntos de venta y depósitos del negocio">
+                <Button onClick={openCreate}><Plus className="mr-2 h-[15px] w-[15px]" /> Nueva sucursal</Button>
+            </PageHead>
 
             {loading ? (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -85,7 +82,7 @@ export default function SucursalesPage() {
                             <CardContent className="p-5">
                                 <div className="flex items-start justify-between mb-3">
                                     <div className="flex items-center gap-2">
-                                        <Building2 className="h-5 w-5 text-primary" />
+                                        <Building2 className="h-[18px] w-[18px] text-muted-foreground" />
                                         <h3 className="font-semibold">{branch.name}</h3>
                                     </div>
                                     <div className="flex gap-1">

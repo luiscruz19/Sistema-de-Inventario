@@ -12,9 +12,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { ProductPicker } from '@/components/common/ProductPicker'
 import { formatCurrency } from '@/lib/utils'
 import { Plus, Pencil, Trash2, DollarSign } from 'lucide-react'
-import type { PriceList, PriceListItem, Product, Pagination } from '@/types'
+import type { PriceList, PriceListItem, Pagination } from '@/types'
 
 const typeMap: Record<string, string> = { retail: 'Minorista', wholesale: 'Mayorista', special: 'Especial' }
 
@@ -23,7 +24,6 @@ interface PriceItemForm { product_id: string; price: string }
 export default function ListasPrecioPage() {
     const api = useApi()
     const [lists, setLists] = useState<PriceList[]>([])
-    const [products, setProducts] = useState<Product[]>([])
     const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
     const [loading, setLoading] = useState(true)
     const [showModal, setShowModal] = useState(false)
@@ -32,12 +32,6 @@ export default function ListasPrecioPage() {
     const [showItemsModal, setShowItemsModal] = useState(false)
     const [selectedList, setSelectedList] = useState<PriceList | null>(null)
     const [listItems, setListItems] = useState<PriceItemForm[]>([])
-
-    useEffect(() => {
-        api.get<Product[]>('/products', { limit: '500', active: 'true' }).then(res => {
-            if (res.status === 1 && res.data) setProducts(Array.isArray(res.data) ? res.data : [])
-        })
-    }, [api])
 
     const fetchLists = useCallback(async (page = 1) => {
         setLoading(true)
@@ -103,8 +97,8 @@ export default function ListasPrecioPage() {
 
     const columns: Column<PriceList>[] = [
         { key: 'name', label: 'Nombre', sortable: true, render: (v) => <span className="font-medium">{v as string}</span> },
-        { key: 'type', label: 'Tipo', render: (v) => <Badge variant={v === 'wholesale' ? 'default' : v === 'special' ? 'warning' : 'secondary'}>{typeMap[v as string] || v}</Badge> },
-        { key: 'items', label: 'Productos', render: (_, row) => row.items?.length || 0 },
+        { key: 'type', label: 'Tipo', render: (v) => <Badge variant={v === 'wholesale' ? 'default' : v === 'special' ? 'warning' : 'secondary'}>{typeMap[v as string] || String(v)}</Badge> },
+        { key: 'itemCount', label: 'Productos', render: (_, row) => row.itemCount ?? row.items?.length ?? 0 },
         { key: 'active', label: 'Estado', render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activa' : 'Inactiva'}</Badge> },
     ]
 
@@ -161,11 +155,8 @@ export default function ListasPrecioPage() {
                         {listItems.map((item, idx) => (
                             <div key={idx} className="flex items-end gap-2">
                                 <div className="flex-1">
-                                    <Label className="text-xs">Producto</Label>
-                                    <Select value={item.product_id} onValueChange={(v) => setListItems(prev => prev.map((it, i) => i === idx ? { ...it, product_id: v } : it))}>
-                                        <SelectTrigger className="mt-1 h-8"><SelectValue placeholder="Seleccionar" /></SelectTrigger>
-                                        <SelectContent>{products.map(p => <SelectItem key={p.id} value={String(p.id)}>{p.name} ({formatCurrency(p.sale_price)})</SelectItem>)}</SelectContent>
-                                    </Select>
+                                    <Label className="mb-1 block text-xs">Producto</Label>
+                                    <ProductPicker onChange={(p) => setListItems(prev => prev.map((it, i) => i === idx ? { ...it, product_id: p ? String(p.id) : '' } : it))} />
                                 </div>
                                 <div className="w-32">
                                     <Label className="text-xs">Precio</Label>

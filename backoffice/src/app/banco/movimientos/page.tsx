@@ -14,38 +14,38 @@ import { formatCurrency, formatDateTime } from '@/lib/utils'
 import { Plus, ArrowUpDown } from 'lucide-react'
 import type { Pagination } from '@/types'
 
-type MovementType = 'credito' | 'debito'
+type MovementType = 'ingreso' | 'egreso'
 
-type BankAccount = { id: number; name: string; bank: string }
+type BankAccount = { id: number; nombre: string; banco: string }
 
 type BankMovement = {
     id: number
     bank_account_id: number
-    account?: BankAccount
-    type: MovementType
-    amount: number
-    concept: string
-    date: string
-    reference?: string
+    bankAccount?: BankAccount
+    tipo: MovementType
+    monto: number | string
+    concepto: string
+    fecha: string
+    referencia?: string
     createdAt: string
 }
 
 type MovementForm = {
     bank_account_id: string
-    type: MovementType
-    amount: string
-    concept: string
-    date: string
-    reference: string
+    tipo: MovementType
+    monto: string
+    concepto: string
+    fecha: string
+    referencia: string
 }
 
 const emptyForm: MovementForm = {
     bank_account_id: '',
-    type: 'credito',
-    amount: '',
-    concept: '',
-    date: new Date().toISOString().split('T')[0],
-    reference: '',
+    tipo: 'ingreso',
+    monto: '',
+    concepto: '',
+    fecha: new Date().toISOString().split('T')[0],
+    referencia: '',
 }
 
 export default function MovimientosBancariosPage() {
@@ -66,9 +66,9 @@ export default function MovimientosBancariosPage() {
         setLoading(true)
         const params: Record<string, string> = { page: String(page), limit: '20' }
         if (accountFilter) params.bank_account_id = accountFilter
-        if (typeFilter) params.type = typeFilter
-        if (dateFrom) params.date_from = dateFrom
-        if (dateTo) params.date_to = dateTo
+        if (typeFilter) params.tipo = typeFilter
+        if (dateFrom) params.fecha_desde = dateFrom
+        if (dateTo) params.fecha_hasta = dateTo
         const res = await api.get<BankMovement[]>('/bank-movements', params)
         if (res.status === 1 && res.data) {
             setMovements(Array.isArray(res.data) ? res.data : [])
@@ -86,15 +86,18 @@ export default function MovimientosBancariosPage() {
     useEffect(() => { fetchAccounts() }, [fetchAccounts])
 
     const handleSave = async () => {
-        if (!form.bank_account_id || !form.amount || !form.concept.trim()) {
+        if (!form.bank_account_id || !form.monto || !form.concepto.trim()) {
             toast({ title: 'Cuenta, monto y concepto son obligatorios', variant: 'destructive' })
             return
         }
         setSaving(true)
         const res = await api.post('/bank-movements', {
-            ...form,
             bank_account_id: Number(form.bank_account_id),
-            amount: parseFloat(form.amount),
+            fecha: form.fecha,
+            concepto: form.concepto,
+            tipo: form.tipo,
+            monto: parseFloat(form.monto),
+            referencia: form.referencia || null,
         })
         if (res.status === 1) {
             toast({ title: 'Movimiento registrado', variant: 'success' })
@@ -109,41 +112,41 @@ export default function MovimientosBancariosPage() {
 
     const columns: Column<BankMovement>[] = [
         {
-            key: 'date',
+            key: 'fecha',
             label: 'Fecha',
             sortable: true,
             render: (v) => <span className="text-sm">{v ? formatDateTime(v as string).split(' ')[0] : '-'}</span>,
         },
         {
-            key: 'account',
+            key: 'bankAccount',
             label: 'Cuenta',
             render: (_, row) => (
                 <span className="text-sm font-medium">
-                    {row.account ? `${row.account.name} (${row.account.bank})` : `#${row.bank_account_id}`}
+                    {row.bankAccount ? `${row.bankAccount.nombre} (${row.bankAccount.banco})` : `#${row.bank_account_id}`}
                 </span>
             ),
         },
         {
-            key: 'type',
+            key: 'tipo',
             label: 'Tipo',
             render: (v) => (
-                <Badge variant={v === 'credito' ? 'success' : 'destructive'}>
-                    {v === 'credito' ? 'Credito' : 'Debito'}
+                <Badge variant={v === 'ingreso' ? 'success' : 'destructive'}>
+                    {v === 'ingreso' ? 'Ingreso' : 'Egreso'}
                 </Badge>
             ),
         },
         {
-            key: 'concept',
+            key: 'concepto',
             label: 'Concepto',
             render: (v) => <span className="text-sm">{v as string}</span>,
         },
         {
-            key: 'amount',
+            key: 'monto',
             label: 'Monto',
             sortable: true,
             render: (v, row) => (
-                <span className={`font-semibold ${row.type === 'credito' ? 'text-success' : 'text-destructive'}`}>
-                    {row.type === 'credito' ? '+' : '-'}{formatCurrency(v as number)}
+                <span className={`font-semibold ${row.tipo === 'ingreso' ? 'text-success' : 'text-destructive'}`}>
+                    {row.tipo === 'ingreso' ? '+' : '-'}{formatCurrency(Number(v))}
                 </span>
             ),
         },
@@ -164,25 +167,25 @@ export default function MovimientosBancariosPage() {
             </div>
 
             <div className="flex flex-wrap gap-3 mb-4">
-                <Select value={accountFilter} onValueChange={setAccountFilter}>
+                <Select value={accountFilter || '__all__'} onValueChange={(v) => setAccountFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[220px]">
                         <SelectValue placeholder="Todas las cuentas" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todas las cuentas</SelectItem>
+                        <SelectItem value="__all__">Todas las cuentas</SelectItem>
                         {accounts.map(a => (
-                            <SelectItem key={a.id} value={String(a.id)}>{a.name}</SelectItem>
+                            <SelectItem key={a.id} value={String(a.id)}>{a.nombre}</SelectItem>
                         ))}
                     </SelectContent>
                 </Select>
-                <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <Select value={typeFilter || '__all__'} onValueChange={(v) => setTypeFilter(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[160px]">
                         <SelectValue placeholder="Tipo" />
                     </SelectTrigger>
                     <SelectContent>
-                        <SelectItem value="">Todos</SelectItem>
-                        <SelectItem value="credito">Credito</SelectItem>
-                        <SelectItem value="debito">Debito</SelectItem>
+                        <SelectItem value="__all__">Todos</SelectItem>
+                        <SelectItem value="ingreso">Ingreso</SelectItem>
+                        <SelectItem value="egreso">Egreso</SelectItem>
                     </SelectContent>
                 </Select>
                 <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
@@ -211,7 +214,7 @@ export default function MovimientosBancariosPage() {
                                 <SelectTrigger className="mt-1"><SelectValue placeholder="Seleccionar cuenta" /></SelectTrigger>
                                 <SelectContent>
                                     {accounts.map(a => (
-                                        <SelectItem key={a.id} value={String(a.id)}>{a.name} — {a.bank}</SelectItem>
+                                        <SelectItem key={a.id} value={String(a.id)}>{a.nombre} — {a.banco}</SelectItem>
                                     ))}
                                 </SelectContent>
                             </Select>
@@ -219,31 +222,31 @@ export default function MovimientosBancariosPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Tipo *</Label>
-                                <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v as MovementType }))}>
+                                <Select value={form.tipo} onValueChange={(v) => setForm(f => ({ ...f, tipo: v as MovementType }))}>
                                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="credito">Credito (ingreso)</SelectItem>
-                                        <SelectItem value="debito">Debito (egreso)</SelectItem>
+                                        <SelectItem value="ingreso">Ingreso (credito)</SelectItem>
+                                        <SelectItem value="egreso">Egreso (debito)</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                             <div>
                                 <Label>Monto *</Label>
-                                <Input type="number" min={0.01} step={0.01} value={form.amount} onChange={(e) => setForm(f => ({ ...f, amount: e.target.value }))} className="mt-1" />
+                                <Input type="number" min={0.01} step={0.01} value={form.monto} onChange={(e) => setForm(f => ({ ...f, monto: e.target.value }))} className="mt-1" />
                             </div>
                         </div>
                         <div>
                             <Label>Concepto *</Label>
-                            <Input value={form.concept} onChange={(e) => setForm(f => ({ ...f, concept: e.target.value }))} className="mt-1" placeholder="Descripcion del movimiento" />
+                            <Input value={form.concepto} onChange={(e) => setForm(f => ({ ...f, concepto: e.target.value }))} className="mt-1" placeholder="Descripcion del movimiento" />
                         </div>
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Fecha</Label>
-                                <Input type="date" value={form.date} onChange={(e) => setForm(f => ({ ...f, date: e.target.value }))} className="mt-1" />
+                                <Input type="date" value={form.fecha} onChange={(e) => setForm(f => ({ ...f, fecha: e.target.value }))} className="mt-1" />
                             </div>
                             <div>
                                 <Label>Referencia</Label>
-                                <Input value={form.reference} onChange={(e) => setForm(f => ({ ...f, reference: e.target.value }))} className="mt-1" placeholder="N° comprobante" />
+                                <Input value={form.referencia} onChange={(e) => setForm(f => ({ ...f, referencia: e.target.value }))} className="mt-1" placeholder="N° comprobante" />
                             </div>
                         </div>
                     </div>

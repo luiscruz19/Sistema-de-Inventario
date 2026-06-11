@@ -14,47 +14,48 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { EmptyState } from '@/components/common/EmptyState'
 import { Plus, Pencil, Trash2, BookOpen, ChevronRight } from 'lucide-react'
 
-type AccountType = 'activo' | 'pasivo' | 'patrimonio' | 'resultado' | 'egreso'
+type AccountType = 'activo' | 'pasivo' | 'patrimonio' | 'ingreso' | 'egreso' | 'costo'
 
 type Account = {
     id: number
-    code: string
-    name: string
-    type: AccountType
+    codigo: string
+    nombre: string
+    tipo: AccountType
     parent_id?: number
-    is_imputable: boolean
+    imputable: boolean
     children?: Account[]
     createdAt: string
 }
 
 type AccountForm = {
-    code: string
-    name: string
-    type: AccountType
+    codigo: string
+    nombre: string
+    tipo: AccountType
     parent_id: string
-    is_imputable: boolean
+    imputable: boolean
 }
 
 const emptyForm: AccountForm = {
-    code: '',
-    name: '',
-    type: 'activo',
+    codigo: '',
+    nombre: '',
+    tipo: 'activo',
     parent_id: '',
-    is_imputable: true,
+    imputable: true,
 }
 
 const typeMap: Record<AccountType, { label: string; color: string }> = {
     activo: { label: 'Activo', color: 'bg-primary/10 text-primary' },
     pasivo: { label: 'Pasivo', color: 'bg-destructive/10 text-destructive' },
     patrimonio: { label: 'Patrimonio', color: 'bg-primary/10 text-primary' },
-    resultado: { label: 'Resultado', color: 'bg-success/10 text-success' },
+    ingreso: { label: 'Ingreso', color: 'bg-success/10 text-success' },
     egreso: { label: 'Egreso', color: 'bg-warning/10 text-warning' },
+    costo: { label: 'Costo', color: 'bg-muted text-muted-foreground' },
 }
 
 function AccountRow({ account, depth, onEdit, onDelete }: { account: Account; depth: number; onEdit: (a: Account) => void; onDelete: (id: number) => void }) {
     const [expanded, setExpanded] = useState(depth < 1)
     const hasChildren = account.children && account.children.length > 0
-    const typeInfo = typeMap[account.type]
+    const typeInfo = typeMap[account.tipo] ?? { label: account.tipo, color: 'bg-muted text-muted-foreground' }
 
     return (
         <>
@@ -68,11 +69,11 @@ function AccountRow({ account, depth, onEdit, onDelete }: { account: Account; de
                         ) : (
                             <span className="w-4" />
                         )}
-                        <span className="font-mono text-sm text-muted-foreground">{account.code}</span>
+                        <span className="font-mono text-sm text-muted-foreground">{account.codigo}</span>
                     </div>
                 </td>
                 <td className="py-2 px-4">
-                    <span className={`font-medium text-sm ${depth === 0 ? 'font-semibold' : ''}`}>{account.name}</span>
+                    <span className={`font-medium text-sm ${depth === 0 ? 'font-semibold' : ''}`}>{account.nombre}</span>
                 </td>
                 <td className="py-2 px-4">
                     <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${typeInfo.color}`}>
@@ -80,7 +81,7 @@ function AccountRow({ account, depth, onEdit, onDelete }: { account: Account; de
                     </span>
                 </td>
                 <td className="py-2 px-4 text-center">
-                    {account.is_imputable ? (
+                    {account.imputable ? (
                         <Badge variant="success">Si</Badge>
                     ) : (
                         <Badge variant="secondary">No</Badge>
@@ -116,15 +117,22 @@ export default function PlanCuentasPage() {
 
     const fetchAccounts = useCallback(async () => {
         setLoading(true)
-        const res = await api.get<Account[]>('/accounts')
+        const res = await api.get<Account[]>('/chart-of-accounts')
         if (res.status === 1 && res.data) {
-            const data = Array.isArray(res.data) ? res.data : []
-            setAccounts(data)
-            // flat list for parent selector
-            const flat: Account[] = []
-            const flatten = (items: Account[]) => items.forEach(a => { flat.push(a); if (a.children) flatten(a.children) })
-            flatten(data)
+            const flat = Array.isArray(res.data) ? res.data : []
             setFlatAccounts(flat)
+            // El backend devuelve una lista plana ordenada por codigo; armamos el arbol por parent_id
+            const byId = new Map<number, Account>()
+            flat.forEach(a => byId.set(a.id, { ...a, children: [] }))
+            const roots: Account[] = []
+            byId.forEach(a => {
+                if (a.parent_id && byId.has(a.parent_id)) {
+                    byId.get(a.parent_id)!.children!.push(a)
+                } else {
+                    roots.push(a)
+                }
+            })
+            setAccounts(roots)
         }
         setLoading(false)
     }, [api])
@@ -140,28 +148,31 @@ export default function PlanCuentasPage() {
     const openEdit = (acc: Account) => {
         setEditing(acc)
         setForm({
-            code: acc.code,
-            name: acc.name,
-            type: acc.type,
+            codigo: acc.codigo,
+            nombre: acc.nombre,
+            tipo: acc.tipo,
             parent_id: acc.parent_id ? String(acc.parent_id) : '',
-            is_imputable: acc.is_imputable,
+            imputable: acc.imputable,
         })
         setShowModal(true)
     }
 
     const handleSave = async () => {
-        if (!form.code.trim() || !form.name.trim()) {
+        if (!form.codigo.trim() || !form.nombre.trim()) {
             toast({ title: 'Codigo y nombre son obligatorios', variant: 'destructive' })
             return
         }
         setSaving(true)
         const body = {
-            ...form,
+            codigo: form.codigo,
+            nombre: form.nombre,
+            tipo: form.tipo,
             parent_id: form.parent_id ? Number(form.parent_id) : undefined,
+            imputable: form.imputable,
         }
         const res = editing
-            ? await api.put(`/accounts/${editing.id}`, body)
-            : await api.post('/accounts', body)
+            ? await api.put(`/chart-of-accounts/${editing.id}`, body)
+            : await api.post('/chart-of-accounts', body)
         if (res.status === 1) {
             toast({ title: editing ? 'Cuenta actualizada' : 'Cuenta creada', variant: 'success' })
             setShowModal(false)
@@ -174,7 +185,7 @@ export default function PlanCuentasPage() {
 
     const handleDelete = async (id: number) => {
         if (!confirm('Eliminar esta cuenta?')) return
-        const res = await api.del(`/accounts/${id}`)
+        const res = await api.del(`/chart-of-accounts/${id}`)
         if (res.status === 1) {
             toast({ title: 'Cuenta eliminada', variant: 'success' })
             fetchAccounts()
@@ -241,35 +252,36 @@ export default function PlanCuentasPage() {
                         <div className="grid grid-cols-2 gap-4">
                             <div>
                                 <Label>Codigo *</Label>
-                                <Input value={form.code} onChange={(e) => setForm(f => ({ ...f, code: e.target.value }))} className="mt-1 font-mono" placeholder="Ej: 1.1.01" autoFocus />
+                                <Input value={form.codigo} onChange={(e) => setForm(f => ({ ...f, codigo: e.target.value }))} className="mt-1 font-mono" placeholder="Ej: 1.1.01" autoFocus />
                             </div>
                             <div>
                                 <Label>Tipo *</Label>
-                                <Select value={form.type} onValueChange={(v) => setForm(f => ({ ...f, type: v as AccountType }))}>
+                                <Select value={form.tipo} onValueChange={(v) => setForm(f => ({ ...f, tipo: v as AccountType }))}>
                                     <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
                                     <SelectContent>
                                         <SelectItem value="activo">Activo</SelectItem>
                                         <SelectItem value="pasivo">Pasivo</SelectItem>
                                         <SelectItem value="patrimonio">Patrimonio</SelectItem>
-                                        <SelectItem value="resultado">Resultado</SelectItem>
+                                        <SelectItem value="ingreso">Ingreso</SelectItem>
                                         <SelectItem value="egreso">Egreso</SelectItem>
+                                        <SelectItem value="costo">Costo</SelectItem>
                                     </SelectContent>
                                 </Select>
                             </div>
                         </div>
                         <div>
                             <Label>Nombre *</Label>
-                            <Input value={form.name} onChange={(e) => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" />
+                            <Input value={form.nombre} onChange={(e) => setForm(f => ({ ...f, nombre: e.target.value }))} className="mt-1" />
                         </div>
                         <div>
                             <Label>Cuenta padre</Label>
-                            <Select value={form.parent_id} onValueChange={(v) => setForm(f => ({ ...f, parent_id: v }))}>
+                            <Select value={form.parent_id || '__none__'} onValueChange={(v) => setForm(f => ({ ...f, parent_id: v === '__none__' ? '' : v }))}>
                                 <SelectTrigger className="mt-1"><SelectValue placeholder="Sin padre (cuenta raiz)" /></SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="">Sin padre</SelectItem>
+                                    <SelectItem value="__none__">Sin padre</SelectItem>
                                     {flatAccounts.filter(a => !editing || a.id !== editing.id).map(a => (
                                         <SelectItem key={a.id} value={String(a.id)}>
-                                            {a.code} — {a.name}
+                                            {a.codigo} — {a.nombre}
                                         </SelectItem>
                                     ))}
                                 </SelectContent>
@@ -278,8 +290,8 @@ export default function PlanCuentasPage() {
                         <div className="flex items-center gap-2">
                             <Checkbox
                                 id="is_imputable"
-                                checked={form.is_imputable}
-                                onCheckedChange={(v) => setForm(f => ({ ...f, is_imputable: !!v }))}
+                                checked={form.imputable}
+                                onCheckedChange={(v) => setForm(f => ({ ...f, imputable: !!v }))}
                             />
                             <Label htmlFor="is_imputable">Es imputable (acepta asientos)</Label>
                         </div>

@@ -118,7 +118,7 @@ function EmitirPageInner() {
         setSubmitting(false)
         if (res.status === 1 && res.data) {
             toast({ title: 'Factura emitida', description: res.message, variant: 'success' })
-            router.push(`/inventario/facturacion/${res.data.id}`)
+            router.push(`/facturacion/${res.data.id}`)
         } else {
             toast({ title: 'Error al emitir', description: res.message, variant: 'destructive' })
         }

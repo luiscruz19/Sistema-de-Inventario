@@ -2,70 +2,14 @@
 
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useState, useEffect } from 'react'
-import {
-    Home, ShoppingCart, History, Wallet, Package, Tags, ListTree, BarChart3,
-    Warehouse, ArrowLeftRight, AlertTriangle, Truck, ClipboardList,
-    Users, Building2, FileText, Settings, ChevronDown, X, Menu,
-} from 'lucide-react'
-
-type NavChild = { href: string; label: string; icon: React.ElementType }
-type NavItem = { href: string; label: string; icon: React.ElementType; children?: NavChild[] }
-
-const navItems: NavItem[] = [
-    { href: '', label: 'Dashboard', icon: Home },
-    {
-        href: '/ventas',
-        label: 'Ventas',
-        icon: ShoppingCart,
-        children: [
-            { href: '/ventas', label: 'Punto de Venta', icon: ShoppingCart },
-            { href: '/ventas/historial', label: 'Historial', icon: History },
-            { href: '/caja', label: 'Caja', icon: Wallet },
-            { href: '/devoluciones', label: 'Devoluciones', icon: FileText },
-        ],
-    },
-    {
-        href: '/productos',
-        label: 'Productos',
-        icon: Package,
-        children: [
-            { href: '/productos', label: 'Catalogo', icon: Package },
-            { href: '/categorias', label: 'Categorias', icon: Tags },
-            { href: '/productos/listas-precio', label: 'Listas de precio', icon: ListTree },
-        ],
-    },
-    {
-        href: '/stock',
-        label: 'Stock',
-        icon: Warehouse,
-        children: [
-            { href: '/stock', label: 'Niveles', icon: Warehouse },
-            { href: '/stock/movimientos', label: 'Movimientos', icon: ArrowLeftRight },
-            { href: '/transferencias', label: 'Transferencias', icon: ArrowLeftRight },
-            { href: '/stock/alertas', label: 'Alertas', icon: AlertTriangle },
-        ],
-    },
-    {
-        href: '/compras',
-        label: 'Compras',
-        icon: Truck,
-        children: [
-            { href: '/proveedores', label: 'Proveedores', icon: Truck },
-            { href: '/compras', label: 'Ordenes de compra', icon: ClipboardList },
-        ],
-    },
-    { href: '/clientes', label: 'Clientes', icon: Users },
-    { href: '/sucursales', label: 'Sucursales', icon: Building2 },
-    { href: '/reportes', label: 'Reportes', icon: BarChart3 },
-    { href: '/configuracion', label: 'Configuracion', icon: Settings },
-]
+import { useState, useEffect, useMemo } from 'react'
+import { Package, X, Menu } from 'lucide-react'
+import { primaryNav, secondaryNav, type NavItem } from '@/lib/nav'
 
 export default function Sidebar() {
     const pathname = usePathname()
     const [isMobile, setIsMobile] = useState(false)
     const [isOpen, setIsOpen] = useState(false)
-    const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({})
 
     useEffect(() => {
         const check = () => setIsMobile(window.innerWidth < 1024)
@@ -75,137 +19,104 @@ export default function Sidebar() {
     }, [])
 
     useEffect(() => {
-        navItems.forEach((item) => {
-            if (item.children && item.children.some(c => pathname === c.href || pathname.startsWith(c.href + '/'))) {
-                setOpenGroups(prev => ({ ...prev, [item.href]: true }))
-            }
-        })
-    }, [pathname])
-
-    useEffect(() => {
         if (isMobile) setIsOpen(false)
     }, [pathname, isMobile])
 
-    const toggleGroup = (href: string) => setOpenGroups(prev => ({ ...prev, [href]: !prev[href] }))
+    // Activo = el ítem cuyo href coincide más específicamente (match más largo gana),
+    // así /ventas/historial marca "Ventas" y no "Punto de venta".
+    const activeHref = useMemo(() => {
+        const matches = [...primaryNav, ...secondaryNav]
+            .map(i => i.href)
+            .filter(h => (h === '' ? pathname === '' || pathname === '/' : pathname === h || pathname.startsWith(h + '/')))
+        return matches.sort((a, b) => b.length - a.length)[0] ?? null
+    }, [pathname])
 
-    const isActive = (href: string) => {
-        if (href === '') return pathname === ''
-        return pathname === href
+    const isActive = (href: string) => href === activeHref
+
+    const renderItem = (item: NavItem, shortcut?: number) => {
+        const active = isActive(item.href)
+        const Icon = item.icon
+        return (
+            <li key={item.href || 'dashboard'}>
+                <Link
+                    href={item.href}
+                    className={`relative flex items-center gap-2.5 rounded-md px-2.5 py-2 text-[13px] transition-colors ${
+                        active
+                            ? 'bg-accent font-medium text-foreground'
+                            : 'text-muted-foreground hover:bg-accent hover:text-foreground'
+                    }`}
+                >
+                    {active && (
+                        <span className="absolute -left-2.5 top-1/2 h-4 w-[3px] -translate-y-1/2 rounded-r-sm bg-primary" />
+                    )}
+                    <Icon className={`h-[17px] w-[17px] shrink-0 ${active ? 'opacity-100' : 'opacity-85'}`} />
+                    <span className="flex-1">{item.label}</span>
+                    {shortcut && (
+                        <kbd
+                            className={`rounded border border-border bg-muted px-1.5 py-px font-mono text-[10.5px] font-medium text-muted-foreground transition-opacity ${
+                                active ? 'opacity-100' : 'opacity-0 group-hover/sb:opacity-100'
+                            }`}
+                        >
+                            {shortcut}
+                        </kbd>
+                    )}
+                </Link>
+            </li>
+        )
     }
-
-    const isGroupActive = (item: NavItem) =>
-        item.children?.some(c => pathname === c.href || pathname.startsWith(c.href + '/')) || false
 
     return (
         <>
             {isMobile && (
                 <button
                     onClick={() => setIsOpen(true)}
-                    className="fixed top-4 left-4 z-50 p-2 bg-card border border-border rounded-lg shadow-sm lg:hidden"
+                    className="fixed left-4 top-4 z-50 rounded-md border border-border bg-card p-2 shadow-sm lg:hidden"
+                    aria-label="Abrir menú"
                 >
                     <Menu className="h-5 w-5" />
                 </button>
             )}
 
             {isMobile && isOpen && (
-                <div className="fixed inset-0 z-[9998] bg-foreground/30 backdrop-blur-sm lg:hidden" onClick={() => setIsOpen(false)} />
+                <div className="fixed inset-0 z-[9998] bg-foreground/30 lg:hidden" onClick={() => setIsOpen(false)} />
             )}
 
-            <aside className={`${
-                isMobile
-                    ? `fixed left-0 top-0 z-[9999] h-full w-64 transform bg-card border-r border-border transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
-                    : 'flex h-screen w-64 flex-col border-r border-border bg-card'
-            }`}>
-                <div className="flex items-center justify-between border-b border-border px-5 py-4">
+            <aside
+                className={`${
+                    isMobile
+                        ? `fixed left-0 top-0 z-[9999] h-full w-[248px] transform bg-card transition-transform duration-300 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`
+                        : 'flex h-screen w-[248px] flex-col bg-card'
+                } group/sb border-r border-border`}
+            >
+                {/* Marca */}
+                <div className="flex items-center justify-between border-b border-border px-[18px] py-4">
                     <div className="flex items-center gap-2.5">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-                            <Package className="h-5 w-5" />
+                        <div className="flex h-[30px] w-[30px] items-center justify-center rounded-md bg-foreground text-background">
+                            <Package className="h-[17px] w-[17px]" />
                         </div>
-                        <div>
-                            <h1 className="text-base font-semibold tracking-tight text-foreground">Inventario</h1>
-                            <p className="text-xs text-muted-foreground">Sistema de ventas</p>
+                        <div className="min-w-0">
+                            <p className="text-sm font-semibold leading-tight tracking-[-0.01em] text-foreground">Inventario</p>
+                            <p className="text-[11px] leading-snug text-muted-foreground">Sistema de ventas</p>
                         </div>
                     </div>
                     {isMobile && (
-                        <button onClick={() => setIsOpen(false)} className="p-1 rounded-md hover:bg-muted">
+                        <button onClick={() => setIsOpen(false)} className="rounded-md p-1 hover:bg-muted" aria-label="Cerrar menú">
                             <X className="h-5 w-5 text-muted-foreground" />
                         </button>
                     )}
                 </div>
 
-                <nav className="flex-1 overflow-y-auto px-3 py-4">
-                    <ul className="space-y-0.5">
-                        {navItems.map((item) => {
-                            const Icon = item.icon
-
-                            if (item.children) {
-                                const groupOpen = openGroups[item.href] ?? false
-                                const groupActive = isGroupActive(item)
-
-                                return (
-                                    <li key={item.label}>
-                                        <button
-                                            onClick={() => toggleGroup(item.href)}
-                                            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                                                groupActive && !groupOpen
-                                                    ? 'bg-primary/10 text-primary font-medium'
-                                                    : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                            }`}
-                                        >
-                                            <Icon className={`h-[18px] w-[18px] shrink-0 ${groupActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                                            <span className="flex-1 text-left">{item.label}</span>
-                                            <ChevronDown className={`h-4 w-4 transition-transform duration-200 ${groupOpen ? 'rotate-180' : ''} ${groupActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                                        </button>
-                                        {groupOpen && (
-                                            <ul className="ml-3 mt-0.5 space-y-0.5 border-l border-border pl-3">
-                                                {item.children.map((child) => {
-                                                    const childActive = isActive(child.href)
-                                                    const ChildIcon = child.icon
-                                                    return (
-                                                        <li key={child.href}>
-                                                            <Link
-                                                                href={child.href}
-                                                                className={`flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors ${
-                                                                    childActive
-                                                                        ? 'bg-primary/10 text-primary font-medium'
-                                                                        : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                                                }`}
-                                                            >
-                                                                <ChildIcon className={`h-4 w-4 shrink-0 ${childActive ? 'text-primary' : 'text-muted-foreground'}`} />
-                                                                <span>{child.label}</span>
-                                                            </Link>
-                                                        </li>
-                                                    )
-                                                })}
-                                            </ul>
-                                        )}
-                                    </li>
-                                )
-                            }
-
-                            const active = isActive(item.href)
-                            return (
-                                <li key={item.href}>
-                                    <Link
-                                        href={item.href}
-                                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm transition-colors ${
-                                            active
-                                                ? 'bg-primary/10 text-primary font-medium'
-                                                : 'text-muted-foreground hover:bg-muted hover:text-foreground'
-                                        }`}
-                                    >
-                                        <Icon className={`h-[18px] w-[18px] shrink-0 ${active ? 'text-primary' : 'text-muted-foreground'}`} />
-                                        <span>{item.label}</span>
-                                    </Link>
-                                </li>
-                            )
-                        })}
-                    </ul>
+                {/* Navegación */}
+                <nav className="flex-1 overflow-y-auto px-2.5 py-3">
+                    <ul className="flex flex-col gap-px">{primaryNav.map((item, i) => renderItem(item, i + 1))}</ul>
+                    <p className="px-2.5 pb-1.5 pt-5 text-[10px] font-semibold uppercase tracking-[0.06em] text-muted-foreground">
+                        Operaciones
+                    </p>
+                    <ul className="flex flex-col gap-px">{secondaryNav.map(item => renderItem(item))}</ul>
                 </nav>
 
-                <div className="border-t border-border p-3">
-                    <div className="text-center text-xs text-muted-foreground">Inventario v1.0</div>
-                </div>
+                {/* Pie */}
+                <div className="border-t border-border px-3.5 py-3 text-[11px] text-muted-foreground">Inventario · v1.0</div>
             </aside>
         </>
     )

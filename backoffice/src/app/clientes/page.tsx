@@ -3,7 +3,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
-import { DataTable, type Column } from '@/components/common/DataTable'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { EmptyState } from '@/components/common/EmptyState'
+import { Pagination as PaginationCtl } from '@/components/common/Pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -13,8 +15,10 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Separator } from '@/components/ui/separator'
+import { PageHead } from '@/components/common/PageHead'
+import { useScreenActions } from '@/components/command/screen-actions'
 import { formatCurrency } from '@/lib/utils'
-import { Plus, Pencil, Trash2, Eye, History } from 'lucide-react'
+import { Plus, Pencil, Trash2, Eye, History, Search, UserX } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Customer, Sale, Pagination } from '@/types'
 
@@ -84,46 +88,80 @@ export default function ClientesPage() {
         else toast({ title: 'Error', description: res.message, variant: 'destructive' })
     }
 
-    const columns: Column<Customer>[] = [
-        { key: 'name', label: 'Nombre', sortable: true, render: (v) => <span className="font-medium">{v as string}</span> },
-        { key: 'tax_id', label: 'CUIT', render: (v) => <span className="font-mono text-xs">{(v as string) || '-'}</span> },
-        { key: 'type', label: 'Tipo', render: (v) => <Badge variant={v === 'wholesale' ? 'default' : 'secondary'}>{v === 'wholesale' ? 'Mayorista' : 'Minorista'}</Badge> },
-        { key: 'email', label: 'Email', render: (v) => v ? <span className="text-primary text-sm">{v as string}</span> : '-' },
-        { key: 'phone', label: 'Telefono', render: (v) => (v as string) || '-' },
-        { key: 'balance', label: 'Saldo', sortable: true, render: (v) => {
-            const n = v as number
-            return <span className={n > 0 ? 'text-destructive font-semibold' : n < 0 ? 'text-success font-semibold' : ''}>{formatCurrency(n)}</span>
-        }},
-        { key: 'active', label: 'Estado', render: (v) => <Badge variant={v ? 'success' : 'secondary'}>{v ? 'Activo' : 'Inactivo'}</Badge> },
-    ]
+    useScreenActions({
+        primary: { label: 'Nuevo cliente', icon: Plus, run: openCreate },
+        search: () => document.getElementById('clientes-search')?.focus(),
+        searchLabel: 'Buscar clientes',
+    }, [])
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Clientes</h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">Cuentas, saldos y cuenta corriente</p>
+            <PageHead title="Clientes" sub={`${pagination.totalItems} ${pagination.totalItems === 1 ? 'cliente' : 'clientes'}`}>
+                <Button onClick={openCreate}><Plus className="mr-2 h-[15px] w-[15px]" /> Nuevo cliente</Button>
+            </PageHead>
+
+            <div className="mb-3.5 flex flex-wrap gap-2.5">
+                <div className="relative w-full max-w-[320px] flex-1 min-w-[220px]">
+                    <Search className="absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-muted-foreground" />
+                    <Input id="clientes-search" className="pl-9" placeholder="Buscar por nombre o CUIT..." value={search} onChange={e => setSearch(e.target.value)} />
                 </div>
-                <Button onClick={openCreate}><Plus className="h-4 w-4 mr-2" /> Nuevo cliente</Button>
+                <div className="w-[200px]">
+                    <Select value={typeFilter || '__all__'} onValueChange={v => setTypeFilter(v === '__all__' ? '' : v)}>
+                        <SelectTrigger><SelectValue placeholder="Todos los tipos" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__all__">Todos los tipos</SelectItem>
+                            <SelectItem value="regular">Minorista</SelectItem>
+                            <SelectItem value="wholesale">Mayorista</SelectItem>
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
-            <DataTable
-                data={customers} columns={columns} pagination={pagination}
-                onPageChange={(p) => fetchCustomers(p)} searchValue={search} onSearchChange={setSearch}
-                searchPlaceholder="Buscar por nombre, CUIT, email..."
-                filters={[{ key: 'type', label: 'Tipo', options: [{ value: 'regular', label: 'Minorista' }, { value: 'wholesale', label: 'Mayorista' }] }]}
-                filterValues={{ type: typeFilter }}
-                onFilterChange={(k, v) => { if (k === 'type') setTypeFilter(v) }}
-                isLoading={loading} emptyMessage="No se encontraron clientes"
-                actions={(row) => (
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewDetail(row)}><Eye className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" title="Cuenta corriente" onClick={() => router.push(`/clientes/${row.id}`)}><History className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => openEdit(row)}><Pencil className="h-4 w-4" /></Button>
-                        <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive/80" onClick={() => handleDelete(row.id)}><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                )}
-            />
+            {loading ? (
+                <div className="h-64 animate-pulse rounded-xl border bg-muted/30" />
+            ) : customers.length === 0 ? (
+                <EmptyState icon={UserX} title="Sin resultados" description="No hay clientes que coincidan con el filtro." />
+            ) : (
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Cliente</TableHead>
+                                <TableHead>CUIT</TableHead>
+                                <TableHead>Condición</TableHead>
+                                <TableHead>Saldo</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead className="w-px text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {customers.map(c => (
+                                <TableRow key={c.id}>
+                                    <TableCell className="font-medium">{c.name}</TableCell>
+                                    <TableCell className="font-mono text-xs tabular-nums text-muted-foreground">{c.tax_id || '—'}</TableCell>
+                                    <TableCell><Badge variant="secondary">{c.type === 'wholesale' ? 'Mayorista' : 'Minorista'}</Badge></TableCell>
+                                    <TableCell className={`tabular-nums ${c.balance > 0 ? 'font-semibold text-destructive' : c.balance < 0 ? 'font-semibold text-success' : ''}`}>{formatCurrency(c.balance)}</TableCell>
+                                    <TableCell><Badge variant={c.active ? 'success' : 'secondary'}>{c.active ? 'Activo' : 'Inactivo'}</Badge></TableCell>
+                                    <TableCell className="text-right">
+                                        <div className="flex justify-end gap-1">
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver detalle" onClick={() => viewDetail(c)}><Eye className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Cuenta corriente" onClick={() => router.push(`/clientes/${c.id}`)}><History className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8" title="Editar" onClick={() => openEdit(c)}><Pencil className="h-4 w-4" /></Button>
+                                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive hover:text-destructive" title="Eliminar" onClick={() => handleDelete(c.id)}><Trash2 className="h-4 w-4" /></Button>
+                                        </div>
+                                    </TableCell>
+                                </TableRow>
+                            ))}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+
+            {!loading && customers.length > 0 && (
+                <div className="mt-3.5">
+                    <PaginationCtl currentPage={pagination.currentPage} totalPages={pagination.totalPages} totalItems={pagination.totalItems} perPage={pagination.perPage} onPageChange={fetchCustomers} />
+                </div>
+            )}
 
             {/* Create/Edit Modal */}
             <Dialog open={showModal} onOpenChange={setShowModal}>

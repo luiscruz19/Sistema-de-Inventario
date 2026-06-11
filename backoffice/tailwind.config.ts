@@ -8,19 +8,20 @@ const config: Config = {
     theme: {
         extend: {
             colors: {
-                // Escala hardcodeada existente (NO eliminar: la usan las páginas)
+                // Rampa de marca — azul profundo y desaturado ("Sober Premium").
+                // La usan las páginas directamente (primary-600, primary-50, etc.).
                 primary: {
-                    50: '#eff6ff',
-                    100: '#dbeafe',
-                    200: '#bfdbfe',
-                    300: '#93c5fd',
-                    400: '#60a5fa',
-                    500: '#3b82f6',
-                    600: '#2563eb',
-                    700: '#1d4ed8',
-                    800: '#1e40af',
-                    900: '#1e3a8a',
-                    950: '#172554',
+                    50: '#eef2f9',
+                    100: '#d7e0ef',
+                    200: '#aebfdd',
+                    300: '#7e96c5',
+                    400: '#5572a8',
+                    500: '#3a5688',
+                    600: '#2d4773',
+                    700: '#25395c',
+                    800: '#1e2e49',
+                    900: '#18243a',
+                    950: '#0f1726',
                     // Tokens semánticos para variantes (default/foreground)
                     DEFAULT: 'hsl(var(--primary))',
                     foreground: 'hsl(var(--primary-foreground))',
@@ -60,24 +61,28 @@ const config: Config = {
                     DEFAULT: 'hsl(var(--warning))',
                     foreground: 'hsl(var(--warning-foreground))',
                 },
+                info: {
+                    DEFAULT: 'hsl(var(--info))',
+                    foreground: 'hsl(var(--info-foreground))',
+                },
                 border: 'hsl(var(--border))',
                 input: 'hsl(var(--input))',
                 ring: 'hsl(var(--ring))',
             },
             borderRadius: {
+                sm: 'calc(var(--radius) - 2px)',
+                md: 'calc(var(--radius) - 1px)',
                 lg: 'var(--radius)',
-                md: 'calc(var(--radius) - 2px)',
-                sm: 'calc(var(--radius) - 4px)',
-                xl: 'calc(var(--radius) + 4px)',
+                xl: 'calc(var(--radius) + 2px)',
             },
             fontFamily: {
                 sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', 'sans-serif'],
             },
             boxShadow: {
-                sm: '0 1px 2px 0 rgb(0 0 0 / 0.04)',
-                DEFAULT: '0 1px 3px 0 rgb(0 0 0 / 0.06), 0 1px 2px -1px rgb(0 0 0 / 0.06)',
-                md: '0 4px 6px -1px rgb(0 0 0 / 0.07), 0 2px 4px -2px rgb(0 0 0 / 0.07)',
-                lg: '0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.08)',
+                sm: '0 1px 2px 0 rgb(12 14 18 / 0.04)',
+                DEFAULT: '0 1px 2px 0 rgb(12 14 18 / 0.05), 0 1px 1px -1px rgb(12 14 18 / 0.04)',
+                md: '0 2px 4px -1px rgb(12 14 18 / 0.06), 0 1px 2px -1px rgb(12 14 18 / 0.05)',
+                lg: '0 8px 24px -6px rgb(12 14 18 / 0.12), 0 2px 6px -2px rgb(12 14 18 / 0.07)',
             },
             keyframes: {
                 'accordion-down': { from: { height: '0' }, to: { height: 'var(--radix-accordion-content-height)' } },

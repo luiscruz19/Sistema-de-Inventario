@@ -3,17 +3,22 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useApi } from '@/hooks/use-api'
 import { toast } from '@/hooks/use-toast'
-import { DataTable, type Column } from '@/components/common/DataTable'
+import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell } from '@/components/ui/table'
+import { EmptyState } from '@/components/common/EmptyState'
+import { Pagination as PaginationCtl } from '@/components/common/Pagination'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Separator } from '@/components/ui/separator'
+import { PageHead } from '@/components/common/PageHead'
+import { useScreenActions } from '@/components/command/screen-actions'
 import { formatCurrency, formatDate, formatDateTime } from '@/lib/utils'
-import { Plus, Eye, Send, Check, XCircle } from 'lucide-react'
+import { Plus, Eye, Send, Check, XCircle, Truck } from 'lucide-react'
 import Link from 'next/link'
-import type { PurchaseOrder, PurchaseOrderItem, Supplier, Pagination } from '@/types'
+import { useRouter } from 'next/navigation'
+import type { PurchaseOrder, Supplier, Pagination } from '@/types'
 
 const statusMap: Record<string, { label: string; variant: 'secondary' | 'default' | 'warning' | 'success' | 'destructive' }> = {
     draft: { label: 'Borrador', variant: 'secondary' },
@@ -25,6 +30,7 @@ const statusMap: Record<string, { label: string; variant: 'secondary' | 'default
 
 export default function ComprasPage() {
     const api = useApi()
+    const router = useRouter()
     const [orders, setOrders] = useState<PurchaseOrder[]>([])
     const [suppliers, setSuppliers] = useState<Supplier[]>([])
     const [pagination, setPagination] = useState<Pagination>({ totalItems: 0, totalPages: 0, currentPage: 1, perPage: 20 })
@@ -94,48 +100,89 @@ export default function ComprasPage() {
         }
     }
 
-    const columns: Column<PurchaseOrder>[] = [
-        { key: 'order_number', label: 'Nro', sortable: true, render: (v, row) => <span className="font-medium font-mono">{(v as string) || `OC-${row.id}`}</span> },
-        { key: 'supplier', label: 'Proveedor', render: (_, row) => row.supplier?.name || '-' },
-        { key: 'branch', label: 'Sucursal', render: (_, row) => row.branch?.name || '-' },
-        { key: 'total', label: 'Total', sortable: true, render: (v) => <span className="font-semibold">{formatCurrency(v as number)}</span> },
-        { key: 'status', label: 'Estado', render: (v) => {
-            const s = statusMap[v as string]
-            return s ? <Badge variant={s.variant}>{s.label}</Badge> : <Badge>{v as string}</Badge>
-        }},
-        { key: 'expected_date', label: 'Fecha esperada', render: (v) => v ? formatDate(v as string) : '-' },
-    ]
+    useScreenActions({
+        primary: { label: 'Nueva orden', icon: Plus, run: () => router.push('/compras/nueva') },
+    }, [])
 
     return (
         <div>
-            <div className="flex items-center justify-between mb-6">
-                <div>
-                    <h1 className="text-2xl font-semibold tracking-tight">Ordenes de Compra</h1>
-                    <p className="text-sm text-muted-foreground mt-0.5">Pedidos a proveedores y recepcion de mercaderia</p>
-                </div>
-                <Link href="/inventario/compras/nueva">
-                    <Button><Plus className="h-4 w-4 mr-2" /> Nueva orden</Button>
+            <PageHead title="Compras" sub={`${pagination.totalItems} ${pagination.totalItems === 1 ? 'orden de compra' : 'órdenes de compra'}`}>
+                <Link href="/compras/nueva">
+                    <Button><Plus className="mr-2 h-[15px] w-[15px]" /> Nueva orden</Button>
                 </Link>
+            </PageHead>
+
+            <div className="mb-3.5 flex flex-wrap gap-2.5">
+                <div className="w-[200px]">
+                    <Select value={statusFilter || '__all__'} onValueChange={v => setStatusFilter(v === '__all__' ? '' : v)}>
+                        <SelectTrigger><SelectValue placeholder="Todos los estados" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__all__">Todos los estados</SelectItem>
+                            {Object.entries(statusMap).map(([k, v]) => <SelectItem key={k} value={k}>{v.label}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div className="w-[220px]">
+                    <Select value={supplierFilter || '__all__'} onValueChange={v => setSupplierFilter(v === '__all__' ? '' : v)}>
+                        <SelectTrigger><SelectValue placeholder="Todos los proveedores" /></SelectTrigger>
+                        <SelectContent>
+                            <SelectItem value="__all__">Todos los proveedores</SelectItem>
+                            {suppliers.map(s => <SelectItem key={s.id} value={String(s.id)}>{s.name}</SelectItem>)}
+                        </SelectContent>
+                    </Select>
+                </div>
             </div>
 
-            <DataTable
-                data={orders} columns={columns} pagination={pagination}
-                onPageChange={(p) => fetchOrders(p)} isLoading={loading} emptyMessage="No se encontraron ordenes"
-                filters={[
-                    { key: 'status', label: 'Estado', options: Object.entries(statusMap).map(([k, v]) => ({ value: k, label: v.label })) },
-                    { key: 'supplier', label: 'Proveedor', options: suppliers.map(s => ({ value: String(s.id), label: s.name })) },
-                ]}
-                filterValues={{ status: statusFilter, supplier: supplierFilter }}
-                onFilterChange={(k, v) => { if (k === 'status') setStatusFilter(v); if (k === 'supplier') setSupplierFilter(v) }}
-                actions={(row) => (
-                    <div className="flex gap-1">
-                        <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => viewDetail(row)}><Eye className="h-4 w-4" /></Button>
-                        {row.status === 'draft' && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" onClick={() => sendOrder(row.id)}><Send className="h-4 w-4" /></Button>}
-                        {(row.status === 'sent' || row.status === 'partial') && <Button variant="ghost" size="icon" className="h-8 w-8 text-success" onClick={() => openReceive(row)}><Check className="h-4 w-4" /></Button>}
-                        {(row.status === 'draft' || row.status === 'sent') && <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => cancelOrder(row.id)}><XCircle className="h-4 w-4" /></Button>}
-                    </div>
-                )}
-            />
+            {loading ? (
+                <div className="h-64 animate-pulse rounded-xl border bg-muted/30" />
+            ) : orders.length === 0 ? (
+                <EmptyState icon={Truck} title="Sin órdenes" description="No hay órdenes de compra que coincidan con el filtro." />
+            ) : (
+                <div className="overflow-hidden rounded-xl border border-border bg-card">
+                    <Table>
+                        <TableHeader>
+                            <TableRow>
+                                <TableHead>Orden</TableHead>
+                                <TableHead>Fecha</TableHead>
+                                <TableHead>Proveedor</TableHead>
+                                <TableHead>Ítems</TableHead>
+                                <TableHead>Total</TableHead>
+                                <TableHead>Estado</TableHead>
+                                <TableHead className="w-px text-right">Acciones</TableHead>
+                            </TableRow>
+                        </TableHeader>
+                        <TableBody>
+                            {orders.map(o => {
+                                const s = statusMap[o.status]
+                                return (
+                                    <TableRow key={o.id}>
+                                        <TableCell className="font-mono text-xs font-medium tabular-nums">{o.order_number || `OC-${o.id}`}</TableCell>
+                                        <TableCell className="tabular-nums text-muted-foreground">{o.createdAt ? formatDate(o.createdAt) : '—'}</TableCell>
+                                        <TableCell>{o.supplier?.name || '—'}</TableCell>
+                                        <TableCell className="tabular-nums">{o.items?.length ?? '—'}</TableCell>
+                                        <TableCell className="tabular-nums">{formatCurrency(o.total)}</TableCell>
+                                        <TableCell>{s ? <Badge variant={s.variant}>{s.label}</Badge> : <Badge>{o.status}</Badge>}</TableCell>
+                                        <TableCell className="text-right">
+                                            <div className="flex justify-end gap-1">
+                                                <Button variant="ghost" size="icon" className="h-8 w-8" title="Ver detalle" onClick={() => viewDetail(o)}><Eye className="h-4 w-4" /></Button>
+                                                {o.status === 'draft' && <Button variant="ghost" size="icon" className="h-8 w-8 text-primary" title="Enviar" onClick={() => sendOrder(o.id)}><Send className="h-4 w-4" /></Button>}
+                                                {(o.status === 'sent' || o.status === 'partial') && <Button variant="ghost" size="icon" className="h-8 w-8 text-success" title="Recibir" onClick={() => openReceive(o)}><Check className="h-4 w-4" /></Button>}
+                                                {(o.status === 'draft' || o.status === 'sent') && <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" title="Cancelar" onClick={() => cancelOrder(o.id)}><XCircle className="h-4 w-4" /></Button>}
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                )
+                            })}
+                        </TableBody>
+                    </Table>
+                </div>
+            )}
+
+            {!loading && orders.length > 0 && (
+                <div className="mt-3.5">
+                    <PaginationCtl currentPage={pagination.currentPage} totalPages={pagination.totalPages} totalItems={pagination.totalItems} perPage={pagination.perPage} onPageChange={fetchOrders} />
+                </div>
+            )}
 
             {/* Detail modal */}
             <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>

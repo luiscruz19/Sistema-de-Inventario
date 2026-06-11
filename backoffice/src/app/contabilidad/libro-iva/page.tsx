@@ -17,17 +17,17 @@ type IVAType = 'ventas' | 'compras'
 
 type IVAEntry = {
     id: number
-    date: string
-    voucher_type: string
-    voucher_number: string
-    cuit: string
-    name: string
-    taxable_base: number
-    iva_21: number
-    iva_10_5: number
-    iva_27: number
-    other_taxes: number
-    total: number
+    fecha: string
+    comprobante_tipo: string
+    numero_comprobante: string
+    cuit_contraparte: string
+    nombre_contraparte: string
+    neto_gravado: number | string
+    neto_no_gravado: number | string
+    iva_21: number | string
+    iva_105: number | string
+    iva_27: number | string
+    total: number | string
 }
 
 export default function LibroIVAPage() {
@@ -39,20 +39,19 @@ export default function LibroIVAPage() {
 
     const totals = entries.reduce(
         (acc, e) => ({
-            taxable_base: acc.taxable_base + e.taxable_base,
-            iva_21: acc.iva_21 + e.iva_21,
-            iva_10_5: acc.iva_10_5 + e.iva_10_5,
-            iva_27: acc.iva_27 + e.iva_27,
-            other_taxes: acc.other_taxes + e.other_taxes,
-            total: acc.total + e.total,
+            neto_gravado: acc.neto_gravado + Number(e.neto_gravado),
+            iva_21: acc.iva_21 + Number(e.iva_21),
+            iva_105: acc.iva_105 + Number(e.iva_105),
+            iva_27: acc.iva_27 + Number(e.iva_27),
+            total: acc.total + Number(e.total),
         }),
-        { taxable_base: 0, iva_21: 0, iva_10_5: 0, iva_27: 0, other_taxes: 0, total: 0 }
+        { neto_gravado: 0, iva_21: 0, iva_105: 0, iva_27: 0, total: 0 }
     )
 
     const fetchEntries = useCallback(async () => {
         if (!period) return
         setLoading(true)
-        const res = await api.get<IVAEntry[]>('/tax-book', { period, type })
+        const res = await api.get<IVAEntry[]>('/vat-book', { periodo: period, tipo: type })
         if (res.status === 1 && res.data) {
             setEntries(Array.isArray(res.data) ? res.data : [])
         } else if (res.status !== 1) {
@@ -68,19 +67,18 @@ export default function LibroIVAPage() {
             toast({ title: 'No hay datos para exportar', variant: 'destructive' })
             return
         }
-        const headers = ['Fecha', 'Tipo', 'Comprobante', 'CUIT', 'Nombre', 'Neto gravado', 'IVA 21%', 'IVA 10.5%', 'IVA 27%', 'Otros imp.', 'Total']
+        const headers = ['Fecha', 'Tipo', 'Comprobante', 'CUIT', 'Nombre', 'Neto gravado', 'IVA 21%', 'IVA 10.5%', 'IVA 27%', 'Total']
         const rows = entries.map(e => [
-            e.date,
-            e.voucher_type,
-            e.voucher_number,
-            e.cuit,
-            e.name,
-            e.taxable_base.toFixed(2),
-            e.iva_21.toFixed(2),
-            e.iva_10_5.toFixed(2),
-            e.iva_27.toFixed(2),
-            e.other_taxes.toFixed(2),
-            e.total.toFixed(2),
+            e.fecha,
+            e.comprobante_tipo,
+            e.numero_comprobante,
+            e.cuit_contraparte,
+            e.nombre_contraparte,
+            Number(e.neto_gravado).toFixed(2),
+            Number(e.iva_21).toFixed(2),
+            Number(e.iva_105).toFixed(2),
+            Number(e.iva_27).toFixed(2),
+            Number(e.total).toFixed(2),
         ])
         const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
         const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
@@ -168,17 +166,17 @@ export default function LibroIVAPage() {
                                     ) : (
                                         entries.map((entry) => (
                                             <tr key={entry.id} className="border-b border-border hover:bg-muted">
-                                                <td className="py-2 px-4 font-mono text-xs">{entry.date}</td>
+                                                <td className="py-2 px-4 font-mono text-xs">{entry.fecha}</td>
                                                 <td className="py-2 px-4">
-                                                    <span className="text-xs text-muted-foreground">{entry.voucher_type}</span>
-                                                    <span className="ml-1 font-mono">{entry.voucher_number}</span>
+                                                    <span className="text-xs text-muted-foreground">{entry.comprobante_tipo}</span>
+                                                    <span className="ml-1 font-mono">{entry.numero_comprobante}</span>
                                                 </td>
-                                                <td className="py-2 px-4 font-mono text-xs">{entry.cuit || '-'}</td>
-                                                <td className="py-2 px-4">{entry.name}</td>
-                                                <td className="py-2 px-4 text-right">{formatCurrency(entry.taxable_base)}</td>
-                                                <td className="py-2 px-4 text-right">{formatCurrency(entry.iva_21)}</td>
-                                                <td className="py-2 px-4 text-right">{formatCurrency(entry.iva_10_5)}</td>
-                                                <td className="py-2 px-4 text-right font-semibold">{formatCurrency(entry.total)}</td>
+                                                <td className="py-2 px-4 font-mono text-xs">{entry.cuit_contraparte || '-'}</td>
+                                                <td className="py-2 px-4">{entry.nombre_contraparte}</td>
+                                                <td className="py-2 px-4 text-right">{formatCurrency(Number(entry.neto_gravado))}</td>
+                                                <td className="py-2 px-4 text-right">{formatCurrency(Number(entry.iva_21))}</td>
+                                                <td className="py-2 px-4 text-right">{formatCurrency(Number(entry.iva_105))}</td>
+                                                <td className="py-2 px-4 text-right font-semibold">{formatCurrency(Number(entry.total))}</td>
                                             </tr>
                                         ))
                                     )}
@@ -193,7 +191,7 @@ export default function LibroIVAPage() {
                                     <div className="flex justify-end gap-8 text-sm">
                                         <div className="text-right">
                                             <p className="text-muted-foreground text-xs">Neto gravado</p>
-                                            <p className="font-semibold">{formatCurrency(totals.taxable_base)}</p>
+                                            <p className="font-semibold">{formatCurrency(totals.neto_gravado)}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-muted-foreground text-xs">IVA 21%</p>
@@ -201,7 +199,7 @@ export default function LibroIVAPage() {
                                         </div>
                                         <div className="text-right">
                                             <p className="text-muted-foreground text-xs">IVA 10.5%</p>
-                                            <p className="font-semibold">{formatCurrency(totals.iva_10_5)}</p>
+                                            <p className="font-semibold">{formatCurrency(totals.iva_105)}</p>
                                         </div>
                                         <div className="text-right">
                                             <p className="text-muted-foreground text-xs font-semibold">TOTAL</p>

@@ -7,15 +7,41 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Separator } from '@/components/ui/separator'
 import { EmptyState } from '@/components/common/EmptyState'
+import { StatCard } from '@/components/ui/stat-card'
+import { PageHead } from '@/components/common/PageHead'
 import { formatCurrency } from '@/lib/utils'
-import { BarChart3, TrendingUp, TrendingDown, DollarSign, Package, ShoppingCart } from 'lucide-react'
+import { BarChart3, DollarSign, ShoppingCart, TrendingUp } from 'lucide-react'
 import type { Branch } from '@/types'
 
-interface SalesReport { total_sales: number; total_revenue: number; avg_ticket: number; total_cost: number; margin: number; by_method: { method: string; count: number; amount: number }[]; by_branch: { branch: string; count: number; amount: number }[] }
-interface ProductsReport { top_selling: { name: string; quantity: number; revenue: number }[]; least_selling: { name: string; quantity: number; revenue: number }[]; no_movement: { name: string; sku: string }[] }
-interface MarginsReport { by_product: { name: string; cost: number; revenue: number; margin: number; margin_pct: number }[]; by_category: { name: string; cost: number; revenue: number; margin: number }[] }
+// Formas reales que devuelve el microservicio de reportes (camelCase).
+interface SalesReport {
+    totalSales: number
+    totalRevenue: number
+    totalDiscount: number
+    totalTax: number
+    avgTicket: number
+    byPaymentMethod: Record<string, { count: number; total: number }>
+}
+interface ProductRow {
+    product_id: number
+    total_quantity: string | number
+    total_revenue: string | number
+    sale_count: number
+    product?: { name?: string; sku?: string }
+}
+interface MarginsReport {
+    totalRevenue: number
+    totalCost: number
+    totalMargin: number
+    marginPercentage: number
+}
+
+const METHOD_LABELS: Record<string, string> = {
+    cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia',
+    mercadopago: 'MercadoPago', credit: 'Crédito', mixed: 'Mixto',
+}
+const rank = 'flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-sm bg-secondary text-xs font-semibold tabular-nums text-muted-foreground'
 
 export default function ReportesPage() {
     const api = useApi()
@@ -23,15 +49,15 @@ export default function ReportesPage() {
     const [dateFrom, setDateFrom] = useState(() => { const d = new Date(); d.setMonth(d.getMonth() - 1); return d.toISOString().split('T')[0] })
     const [dateTo, setDateTo] = useState(() => new Date().toISOString().split('T')[0])
     const [branchId, setBranchId] = useState('')
-    const [salesReport, setSalesReport] = useState<SalesReport | null>(null)
-    const [productsReport, setProductsReport] = useState<ProductsReport | null>(null)
-    const [marginsReport, setMarginsReport] = useState<MarginsReport | null>(null)
+    const [sales, setSales] = useState<SalesReport | null>(null)
+    const [products, setProducts] = useState<ProductRow[]>([])
+    const [margins, setMargins] = useState<MarginsReport | null>(null)
     const [loading, setLoading] = useState(false)
     const [activeTab, setActiveTab] = useState('ventas')
 
     useEffect(() => {
         api.get<Branch[]>('/branches').then(res => {
-            if (res.status === 1 && res.data) setBranches(Array.isArray(res.data) ? res.data : [])
+            if (res.status === 1 && Array.isArray(res.data)) setBranches(res.data)
         })
     }, [api])
 
@@ -39,40 +65,36 @@ export default function ReportesPage() {
         setLoading(true)
         const params: Record<string, string> = { date_from: dateFrom, date_to: dateTo }
         if (branchId) params.branch_id = branchId
-
         const [salesRes, prodsRes, marginsRes] = await Promise.all([
             api.get<SalesReport>('/reports', { ...params, type: 'by-period' }),
-            api.get<ProductsReport>('/reports', { ...params, type: 'by-product' }),
+            api.get<ProductRow[]>('/reports', { ...params, type: 'by-product' }),
             api.get<MarginsReport>('/reports', { ...params, type: 'margins' }),
         ])
-
-        if (salesRes.status === 1 && salesRes.data) setSalesReport(salesRes.data)
-        if (prodsRes.status === 1 && prodsRes.data) setProductsReport(prodsRes.data)
-        if (marginsRes.status === 1 && marginsRes.data) setMarginsReport(marginsRes.data)
+        setSales(salesRes.status === 1 && salesRes.data ? salesRes.data : null)
+        setProducts(prodsRes.status === 1 && Array.isArray(prodsRes.data) ? prodsRes.data : [])
+        setMargins(marginsRes.status === 1 && marginsRes.data ? marginsRes.data : null)
         setLoading(false)
     }, [api, dateFrom, dateTo, branchId])
 
     useEffect(() => { generateReport() }, [generateReport])
 
-    const methodNames: Record<string, string> = { cash: 'Efectivo', card: 'Tarjeta', transfer: 'Transferencia', mercadopago: 'MercadoPago', mixed: 'Mixto' }
+    const topProducts = [...products].sort((a, b) => Number(b.total_revenue) - Number(a.total_revenue))
+    const methods = sales ? Object.entries(sales.byPaymentMethod || {}) : []
 
     return (
         <div>
-            <div className="mb-6">
-                <h1 className="text-2xl font-semibold tracking-tight">Reportes</h1>
-                <p className="text-sm text-muted-foreground mt-0.5">Ventas, productos y margenes por periodo</p>
-            </div>
+            <PageHead title="Reportes" sub="Análisis del negocio · ventas, productos y márgenes" />
 
-            <div className="flex flex-wrap items-end gap-3 mb-6">
+            <div className="mb-6 flex flex-wrap items-end gap-3">
                 <div>
                     <label className="text-xs text-muted-foreground">Desde</label>
-                    <Input type="date" value={dateFrom} onChange={(e) => setDateFrom(e.target.value)} className="w-[160px]" />
+                    <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-[160px]" />
                 </div>
                 <div>
                     <label className="text-xs text-muted-foreground">Hasta</label>
-                    <Input type="date" value={dateTo} onChange={(e) => setDateTo(e.target.value)} className="w-[160px]" />
+                    <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-[160px]" />
                 </div>
-                <Select value={branchId || '__all__'} onValueChange={(v) => setBranchId(v === '__all__' ? '' : v)}>
+                <Select value={branchId || '__all__'} onValueChange={v => setBranchId(v === '__all__' ? '' : v)}>
                     <SelectTrigger className="w-[180px]"><SelectValue placeholder="Todas las sucursales" /></SelectTrigger>
                     <SelectContent>
                         <SelectItem value="__all__">Todas las sucursales</SelectItem>
@@ -80,169 +102,86 @@ export default function ReportesPage() {
                     </SelectContent>
                 </Select>
                 <Button onClick={generateReport} disabled={loading}>
-                    <BarChart3 className="h-4 w-4 mr-2" /> {loading ? 'Generando...' : 'Generar'}
+                    <BarChart3 className="mr-2 h-4 w-4" /> {loading ? 'Generando...' : 'Generar'}
                 </Button>
             </div>
 
-            {/* Summary cards */}
-            {salesReport && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-                    <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center"><ShoppingCart className="h-5 w-5 text-primary" /></div>
-                        <div><p className="text-xs text-muted-foreground">Total ventas</p><p className="text-xl font-semibold tracking-tight">{salesReport.total_sales}</p></div>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-success/10 flex items-center justify-center"><DollarSign className="h-5 w-5 text-success" /></div>
-                        <div><p className="text-xs text-muted-foreground">Ingresos</p><p className="text-xl font-bold text-success">{formatCurrency(salesReport.total_revenue)}</p></div>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary" /></div>
-                        <div><p className="text-xs text-muted-foreground">Ticket promedio</p><p className="text-xl font-semibold tracking-tight">{formatCurrency(salesReport.avg_ticket)}</p></div>
-                    </CardContent></Card>
-                    <Card><CardContent className="p-5 flex items-center gap-4">
-                        <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center"><TrendingUp className="h-5 w-5 text-primary" /></div>
-                        <div><p className="text-xs text-muted-foreground">Margen</p><p className="text-xl font-bold text-primary">{formatCurrency(salesReport.margin)}</p></div>
-                    </CardContent></Card>
-                </div>
-            )}
+            {/* KPIs del período */}
+            <div className="mb-6 grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+                <StatCard label="Total ventas" value={sales ? Number(sales.totalSales) : 0} icon={<ShoppingCart />} delta="operaciones" />
+                <StatCard label="Ingresos" value={formatCurrency(Number(sales?.totalRevenue ?? 0))} icon={<DollarSign />} delta="del período" />
+                <StatCard label="Ticket promedio" value={formatCurrency(Number(sales?.avgTicket ?? 0))} delta="por venta" />
+                <StatCard label="Margen" value={`${Number(margins?.marginPercentage ?? 0).toFixed(1)}%`} icon={<TrendingUp />} delta={formatCurrency(Number(margins?.totalMargin ?? 0))} deltaDirection="up" />
+            </div>
 
             <Tabs value={activeTab} onValueChange={setActiveTab}>
                 <TabsList>
                     <TabsTrigger value="ventas">Ventas</TabsTrigger>
                     <TabsTrigger value="productos">Productos</TabsTrigger>
-                    <TabsTrigger value="margenes">Margenes</TabsTrigger>
+                    <TabsTrigger value="margenes">Márgenes</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="ventas" className="mt-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                         <Card>
-                            <CardHeader><CardTitle className="text-base">Ventas por metodo de pago</CardTitle></CardHeader>
+                            <CardHeader><CardTitle>Ventas por medio de pago</CardTitle></CardHeader>
                             <CardContent>
-                                {salesReport?.by_method && salesReport.by_method.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {salesReport.by_method.map(m => (
-                                            <div key={m.method} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-medium">{methodNames[m.method] || m.method}</span>
-                                                    <span className="text-xs text-muted-foreground">({m.count} ventas)</span>
-                                                </div>
-                                                <span className="font-semibold">{formatCurrency(m.amount)}</span>
+                                {methods.length === 0 ? (
+                                    <EmptyState icon={BarChart3} title="Sin ventas" description="No hay ventas en el período seleccionado." className="py-6" />
+                                ) : (
+                                    <div className="flex flex-col gap-3">
+                                        {methods.map(([m, v]) => (
+                                            <div key={m} className="flex items-center justify-between">
+                                                <span className="text-sm font-medium">{METHOD_LABELS[m] ?? m} <span className="text-xs text-muted-foreground">({v.count} {v.count === 1 ? 'venta' : 'ventas'})</span></span>
+                                                <strong className="text-[13px] font-semibold tabular-nums">{formatCurrency(Number(v.total))}</strong>
                                             </div>
                                         ))}
                                     </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
+                                )}
                             </CardContent>
                         </Card>
                         <Card>
-                            <CardHeader><CardTitle className="text-base">Ventas por sucursal</CardTitle></CardHeader>
-                            <CardContent>
-                                {salesReport?.by_branch && salesReport.by_branch.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {salesReport.by_branch.map(b => (
-                                            <div key={b.branch} className="flex items-center justify-between">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-sm font-medium">{b.branch}</span>
-                                                    <span className="text-xs text-muted-foreground">({b.count} ventas)</span>
-                                                </div>
-                                                <span className="font-semibold">{formatCurrency(b.amount)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
+                            <CardHeader><CardTitle>Detalle del período</CardTitle></CardHeader>
+                            <CardContent className="flex flex-col gap-3">
+                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Ingresos</span><span className="tabular-nums">{formatCurrency(Number(sales?.totalRevenue ?? 0))}</span></div>
+                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Descuentos</span><span className="tabular-nums">{formatCurrency(Number(sales?.totalDiscount ?? 0))}</span></div>
+                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">IVA</span><span className="tabular-nums">{formatCurrency(Number(sales?.totalTax ?? 0))}</span></div>
+                                <div className="flex justify-between text-sm"><span className="text-muted-foreground">Ticket promedio</span><span className="tabular-nums">{formatCurrency(Number(sales?.avgTicket ?? 0))}</span></div>
                             </CardContent>
                         </Card>
                     </div>
                 </TabsContent>
 
                 <TabsContent value="productos" className="mt-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                        <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingUp className="h-4 w-4 text-success" />Mas vendidos</CardTitle></CardHeader>
-                            <CardContent>
-                                {productsReport?.top_selling && productsReport.top_selling.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {productsReport.top_selling.map((p, i) => (
-                                            <div key={p.name} className="flex items-center gap-3">
-                                                <span className="w-6 h-6 rounded-full bg-success/10 text-success text-xs font-bold flex items-center justify-center">{i + 1}</span>
-                                                <div className="flex-1 min-w-0"><p className="text-sm font-medium truncate">{p.name}</p><p className="text-xs text-muted-foreground">{p.quantity} uds</p></div>
-                                                <span className="text-sm font-semibold">{formatCurrency(p.revenue)}</span>
+                    <Card>
+                        <CardHeader><CardTitle>Productos más vendidos</CardTitle></CardHeader>
+                        <CardContent>
+                            {topProducts.length === 0 ? (
+                                <EmptyState icon={ShoppingCart} title="Sin ventas en el período" description="Cuando registres ventas, aparecerán acá." className="py-6" />
+                            ) : (
+                                <div className="flex flex-col gap-3">
+                                    {topProducts.slice(0, 12).map((p, i) => (
+                                        <div key={p.product_id} className="flex items-center gap-3">
+                                            <span className={rank}>{i + 1}</span>
+                                            <div className="min-w-0 flex-1">
+                                                <p className="truncate text-[13px] font-medium">{p.product?.name ?? `#${p.product_id}`}</p>
+                                                <p className="text-xs text-muted-foreground">{Number(p.total_quantity)} unidades · {p.sale_count} {p.sale_count === 1 ? 'venta' : 'ventas'}</p>
                                             </div>
-                                        ))}
-                                    </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><TrendingDown className="h-4 w-4 text-destructive" />Menos vendidos</CardTitle></CardHeader>
-                            <CardContent>
-                                {productsReport?.least_selling && productsReport.least_selling.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {productsReport.least_selling.map((p) => (
-                                            <div key={p.name} className="flex items-center justify-between">
-                                                <div className="min-w-0"><p className="text-sm font-medium truncate">{p.name}</p><p className="text-xs text-muted-foreground">{p.quantity} uds</p></div>
-                                                <span className="text-sm">{formatCurrency(p.revenue)}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader><CardTitle className="text-base flex items-center gap-2"><Package className="h-4 w-4 text-muted-foreground" />Sin movimiento</CardTitle></CardHeader>
-                            <CardContent>
-                                {productsReport?.no_movement && productsReport.no_movement.length > 0 ? (
-                                    <div className="space-y-2">
-                                        {productsReport.no_movement.map((p) => (
-                                            <div key={p.name} className="text-sm"><span className="font-medium">{p.name}</span>{p.sku && <span className="text-xs text-muted-foreground ml-2">{p.sku}</span>}</div>
-                                        ))}
-                                    </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
-                            </CardContent>
-                        </Card>
-                    </div>
+                                            <strong className="text-[13px] font-semibold tabular-nums">{formatCurrency(Number(p.total_revenue))}</strong>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
                 </TabsContent>
 
                 <TabsContent value="margenes" className="mt-4">
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                        <Card>
-                            <CardHeader><CardTitle className="text-base">Margen por producto</CardTitle></CardHeader>
-                            <CardContent>
-                                {marginsReport?.by_product && marginsReport.by_product.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {marginsReport.by_product.map(p => (
-                                            <div key={p.name} className="flex items-center justify-between">
-                                                <div className="min-w-0 flex-1"><p className="text-sm font-medium truncate">{p.name}</p></div>
-                                                <div className="text-right text-sm">
-                                                    <span className="text-success font-semibold">{formatCurrency(p.margin)}</span>
-                                                    <span className="text-muted-foreground ml-2">({p.margin_pct?.toFixed(1)}%)</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
-                            </CardContent>
-                        </Card>
-                        <Card>
-                            <CardHeader><CardTitle className="text-base">Margen por categoria</CardTitle></CardHeader>
-                            <CardContent>
-                                {marginsReport?.by_category && marginsReport.by_category.length > 0 ? (
-                                    <div className="space-y-3">
-                                        {marginsReport.by_category.map(c => (
-                                            <div key={c.name}>
-                                                <div className="flex items-center justify-between mb-1">
-                                                    <span className="text-sm font-medium">{c.name}</span>
-                                                    <span className="text-sm font-semibold text-success">{formatCurrency(c.margin)}</span>
-                                                </div>
-                                                <div className="flex gap-4 text-xs text-muted-foreground">
-                                                    <span>Costo: {formatCurrency(c.cost)}</span>
-                                                    <span>Ingresos: {formatCurrency(c.revenue)}</span>
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                ) : <EmptyState icon={BarChart3} title="Sin datos" description="No hay informacion para el periodo seleccionado." className="py-6" />}
-                            </CardContent>
-                        </Card>
+                    <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 lg:grid-cols-4">
+                        <StatCard label="Ingresos" value={formatCurrency(Number(margins?.totalRevenue ?? 0))} />
+                        <StatCard label="Costo" value={formatCurrency(Number(margins?.totalCost ?? 0))} />
+                        <StatCard label="Margen bruto" value={formatCurrency(Number(margins?.totalMargin ?? 0))} deltaDirection="up" delta="ganancia" />
+                        <StatCard label="Margen %" value={`${Number(margins?.marginPercentage ?? 0).toFixed(1)}%`} icon={<TrendingUp />} />
                     </div>
                 </TabsContent>
             </Tabs>
