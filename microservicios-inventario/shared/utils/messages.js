@@ -1,6 +1,8 @@
 export const errorMessage = ({ extra = null, message = null, code = null }) => Object.assign({ status: 0 }, message ? { message } : null, code ? { code } : null, extra);
 
-export const successMessage = ({ extra = null, message = null, code = null }) => Object.assign({ status: 1 }, message ? { message } : null, code ? { code } : null, extra);
+// Propaga `extra` y tambien cualquier clave suelta (data, pagination, ...): algunos
+// controllers pasan { data, pagination } directo en vez de { extra: { data } }.
+export const successMessage = ({ extra = null, message = null, code = null, ...rest }) => Object.assign({ status: 1 }, message ? { message } : null, code ? { code } : null, extra, rest);
 
 /**
  * Extrae errores de validación de Sequelize
